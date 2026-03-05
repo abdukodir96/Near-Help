@@ -4,8 +4,8 @@ import { NearHelpBatchService } from './near-help-batch.service';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule.forRoot()],
-  controllers: [NearHelpBatchController],
-  providers: [NearHelpBatchService],
+	imports: [ConfigModule.forRoot()],
+	controllers: [NearHelpBatchController],
+	providers: [NearHelpBatchService],
 })
 export class NearHelpBatchModule {}
