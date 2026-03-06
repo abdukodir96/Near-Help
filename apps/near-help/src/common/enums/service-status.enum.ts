@@ -1,6 +1,9 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum ServiceStatus {
+	HOLD = 'HOLD',
 	ACTIVE = 'ACTIVE',
-	INACTIVE = 'INACTIVE',
-	PENDING = 'PENDING',
-	REJECTED = 'REJECTED',
+	REJECT = 'REJECT',
+	DELETE = 'DELETE',
 }
+registerEnumType(ServiceStatus, { name: 'ServiceStatus' });

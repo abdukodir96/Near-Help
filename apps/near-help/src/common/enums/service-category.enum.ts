@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum ServiceCategory {
 	PLUMBING = 'PLUMBING',
 	GAS_LINE = 'GAS_LINE',
@@ -8,3 +10,4 @@ export enum ServiceCategory {
 	REMODELING = 'REMODELING',
 	CLEANING = 'CLEANING',
 }
+registerEnumType(ServiceCategory, { name: 'ServiceCategory' });

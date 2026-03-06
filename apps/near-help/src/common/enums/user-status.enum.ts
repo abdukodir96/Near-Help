@@ -1,5 +1,8 @@
-export enum UserStatus {
+import { registerEnumType } from '@nestjs/graphql';
+
+export enum MemberStatus {
 	ACTIVE = 'ACTIVE',
-	BLOCKED = 'BLOCKED',
-	PENDING = 'PENDING',
+	BLOCK = 'BLOCK',
+	DELETE = 'DELETE',
 }
+registerEnumType(MemberStatus, { name: 'MemberStatus' });
