@@ -1,0 +1,6 @@
+export enum ArticleCategory {
+	FREE_BOARD = 'FREE_BOARD',
+	RECOMMENDATION = 'RECOMMENDATION',
+	NEWS = 'NEWS',
+	HUMOR = 'HUMOR',
+}

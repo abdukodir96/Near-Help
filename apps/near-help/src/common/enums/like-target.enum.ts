@@ -1,0 +1,7 @@
+export enum LikeTarget {
+	SERVICE = 'SERVICE',
+	REVIEW = 'REVIEW',
+	ARTICLE = 'ARTICLE',
+	COMMENT = 'COMMENT',
+	AGENT = 'AGENT',
+}
