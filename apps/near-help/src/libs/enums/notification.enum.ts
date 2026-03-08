@@ -18,5 +18,8 @@ export enum NotificationGroup {
 	MEMBER = 'MEMBER',
 	ARTICLE = 'ARTICLE',
 	SERVICE = 'SERVICE',
+	BOOKING = 'BOOKING',
+	PAYMENT = 'PAYMENT',
+	MESSAGE = 'MESSAGE',
 }
 registerEnumType(NotificationGroup, { name: 'NotificationGroup' });

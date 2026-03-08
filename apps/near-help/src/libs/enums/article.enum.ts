@@ -10,6 +10,6 @@ registerEnumType(ArticleCategory, { name: 'ArticleCategory' });
 
 export enum ArticleStatus {
 	ACTIVE = 'ACTIVE',
-	DELETE = 'DELETE',
+	DELETED = 'DELETED',
 }
 registerEnumType(ArticleStatus, { name: 'ArticleStatus' });
