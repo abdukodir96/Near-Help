@@ -8,29 +8,28 @@ export class MemberResolver {
 	constructor(private readonly memberService: MemberService) {}
 
 	@Mutation(() => String)
-	@UsePipes(ValidationPipe)
+	@UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
 	public async signup(@Args('input') input: MemberInput): Promise<string> {
 		console.log('Mutation: signup');
-		console.log('input:', input);
-		return this.memberService.signup();
+		return await this.memberService.signup(input);
 	}
 
 	@Mutation(() => String)
-	@UsePipes(ValidationPipe)
+	@UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
 	public async login(@Args('input') input: LoginInput): Promise<string> {
 		console.log('Mutation: login');
-		return this.memberService.login();
+		return await this.memberService.login(input);
 	}
 
 	@Mutation(() => String)
 	public async updateMember(): Promise<string> {
 		console.log('Mutation: updateMember');
-		return this.memberService.updateMember();
+		return await this.memberService.updateMember();
 	}
 
 	@Query(() => String)
 	public async getMember(): Promise<string> {
 		console.log('Query: getMember');
-		return this.memberService.getMember();
+		return await this.memberService.getMember();
 	}
 }
