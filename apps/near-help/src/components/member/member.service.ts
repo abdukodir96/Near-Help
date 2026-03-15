@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	ForbiddenException,
+	Injectable,
+	UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LoginInput, MemberInput } from '../../libs/dto/member/member.input';
@@ -18,7 +24,8 @@ export class MemberService {
 			// TODO: Authentication via TOKENs
 			return result;
 		} catch (err: unknown) {
-			console.log('Error, Service.model:', err);
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Service.model:', errMessage);
 			const mongoError = err as { code?: number };
 			if (mongoError?.code === 11000) {
 				throw new ConflictException(Message.USED_MEMBER_NICK_OR_PHONE);
@@ -32,14 +39,14 @@ export class MemberService {
 		const response = await this.memberModel.findOne({ memberNick: memberNick }).select('+memberPassword').exec();
 
 		if (!response || response.memberStatus === MemberStatus.DELETED) {
-			throw new UnauthorizedException(Message.NO_MEMBER_NICK);
+			throw new UnauthorizedException(Message.INVALID_CREDENTIALS);
 		} else if (response.memberStatus === MemberStatus.BLOCKED) {
 			throw new ForbiddenException(Message.BLOCKED_USER);
 		}
 
 		// TODO: Compare passwords
 		const isMatch = memberPassword === response.memberPassword;
-		if (!isMatch) throw new UnauthorizedException(Message.WRONG_PASSWORD);
+		if (!isMatch) throw new UnauthorizedException(Message.INVALID_CREDENTIALS);
 
 		return response;
 	}
