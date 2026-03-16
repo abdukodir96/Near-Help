@@ -19,3 +19,25 @@ export enum Message {
 	PROVIDE_ALLOWED_FORMAT = 'Please provide jpg, jpeg or png images!',
 	SELF_SUBSCRIPTION_DENIED = 'Self subscription is denied!',
 }
+
+export enum ErrorCode {
+	BAD_REQUEST = 'BAD_REQUEST',
+	UNAUTHENTICATED = 'UNAUTHENTICATED',
+	FORBIDDEN = 'FORBIDDEN',
+	NOT_FOUND = 'NOT_FOUND',
+	CONFLICT = 'CONFLICT',
+	INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
+}
+
+const STATUS_CODE_TO_ERROR_CODE: Record<number, ErrorCode> = {
+	400: ErrorCode.BAD_REQUEST,
+	401: ErrorCode.UNAUTHENTICATED,
+	403: ErrorCode.FORBIDDEN,
+	404: ErrorCode.NOT_FOUND,
+	409: ErrorCode.CONFLICT,
+};
+
+export const getErrorCodeByStatus = (status?: number): ErrorCode | undefined => {
+	if (typeof status !== 'number') return undefined;
+	return STATUS_CODE_TO_ERROR_CODE[status];
+};
