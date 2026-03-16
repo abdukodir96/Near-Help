@@ -15,4 +15,7 @@ async function bootstrap() {
 	app.useGlobalInterceptors(new LoggingInterceptor());
 	await app.listen(process.env.PORT_API ?? 3000);
 }
-bootstrap();
+bootstrap().catch((err: unknown) => {
+	console.error('Failed to bootstrap near-help API app', err);
+	process.exit(1);
+});
