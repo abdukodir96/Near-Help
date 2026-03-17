@@ -1,8 +1,12 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { MemberService } from './member.service';
-import { LoginInput, MemberInput } from '../../libs/dto/member/member.input';
+import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
+import { Member } from '../../libs/dto/member/member';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../../libs/guards/gql-auth.guard';
+import { AuthMember } from '../../libs/decorators/auth-member.decorator';
 
 @Resolver()
 export class MemberResolver {
@@ -32,10 +36,14 @@ export class MemberResolver {
 		return this.memberService.logout(input);
 	}
 
-	@Mutation(() => String)
-	public async updateMember(): Promise<string> {
+	@UseGuards(GqlAuthGuard)
+	@Mutation(() => Member)
+	public async updateMember(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: UpdateMemberInput,
+	): Promise<Member> {
 		console.log('Mutation: updateMember');
-		return await this.memberService.updateMember();
+		return await this.memberService.updateMember(memberId, input);
 	}
 
 	@Query(() => String)

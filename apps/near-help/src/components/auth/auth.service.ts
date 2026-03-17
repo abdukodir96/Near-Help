@@ -105,6 +105,22 @@ export class AuthService {
 		}
 	}
 
+	public async verifyAccessToken(accessToken: string): Promise<MemberTokenPayload> {
+		try {
+			const payload = await this.jwtService.verifyAsync<MemberTokenPayload>(accessToken, {
+				secret: getAccessTokenSecret(),
+			});
+
+			if (!payload?.sub || payload.tokenType !== 'access') {
+				throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+			}
+
+			return payload;
+		} catch {
+			throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+		}
+	}
+
 	private extractExpirationDate(payload: unknown): Date | undefined {
 		if (!payload || typeof payload !== 'object') return undefined;
 

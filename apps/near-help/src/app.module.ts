@@ -9,6 +9,7 @@ import { ComponentsModule } from './components/components.module';
 import { DatabaseModule } from './database/database.module';
 import { GraphQLFormattedError } from 'graphql';
 import { formatGraphQLErrorResponse } from './libs/utils/error.util';
+import { Request, Response } from 'express';
 
 @Module({
 	imports: [
@@ -19,6 +20,7 @@ import { formatGraphQLErrorResponse } from './libs/utils/error.util';
 			includeStacktraceInErrorResponses: false,
 			uploads: false,
 			autoSchemaFile: true,
+			context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
 			formatError: (error: GraphQLFormattedError) => {
 				const graphQLFormattedError = formatGraphQLErrorResponse(error);
 				console.log('GRAPHQL GLOBAL ERR:', graphQLFormattedError);

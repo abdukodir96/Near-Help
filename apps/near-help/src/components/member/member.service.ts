@@ -3,11 +3,12 @@ import {
 	ConflictException,
 	ForbiddenException,
 	Injectable,
+	NotFoundException,
 	UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { LoginInput, MemberInput } from '../../libs/dto/member/member.input';
+import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
 import { Member } from '../../libs/dto/member/member';
 import { MemberStatus } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
@@ -139,9 +140,39 @@ export class MemberService {
 		return { message: Message.LOGOUT_SUCCESS };
 	}
 
-	public async updateMember(): Promise<string> {
-		await Promise.resolve();
-		return 'updateMember executed!';
+	public async updateMember(memberId: string, input: UpdateMemberInput): Promise<Member> {
+		const payload = Object.fromEntries(
+			Object.entries(input).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+		if (Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const existingMember = await this.memberModel.findById(memberId).exec();
+		if (!existingMember || existingMember.memberStatus === MemberStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+		if (existingMember.memberStatus === MemberStatus.BLOCKED) {
+			throw new ForbiddenException(Message.BLOCKED_USER);
+		}
+
+		try {
+			const updatedMember = await this.memberModel
+				.findByIdAndUpdate(memberId, { $set: payload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedMember) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedMember;
+		} catch (err: unknown) {
+			const mongoError = err as { code?: number };
+			if (mongoError?.code === 11000) {
+				throw new ConflictException(Message.USED_MEMBER_NICK_OR_PHONE);
+			}
+			throw err;
+		}
 	}
 
 	public async getMember(): Promise<string> {
