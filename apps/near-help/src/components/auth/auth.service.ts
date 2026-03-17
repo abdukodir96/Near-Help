@@ -112,12 +112,16 @@ export class AuthService {
 			});
 
 			if (!payload?.sub || payload.tokenType !== 'access') {
-				throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+				throw new UnauthorizedException(Message.INVALID_ACCESS_TOKEN);
 			}
 
 			return payload;
-		} catch {
-			throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+		} catch (err: unknown) {
+			const errorName = this.getErrorName(err);
+			if (errorName === 'TokenExpiredError') {
+				throw new UnauthorizedException(Message.ACCESS_TOKEN_EXPIRED);
+			}
+			throw new UnauthorizedException(Message.INVALID_ACCESS_TOKEN);
 		}
 	}
 
@@ -126,5 +130,11 @@ export class AuthService {
 
 		const exp = (payload as { exp?: unknown }).exp;
 		return typeof exp === 'number' ? new Date(exp * 1000) : undefined;
+	}
+
+	private getErrorName(err: unknown): string | undefined {
+		if (!err || typeof err !== 'object') return undefined;
+		const name = (err as { name?: unknown }).name;
+		return typeof name === 'string' ? name : undefined;
 	}
 }

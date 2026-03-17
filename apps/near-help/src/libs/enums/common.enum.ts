@@ -12,6 +12,8 @@ export enum Message {
 	NO_MEMBER_NICK = 'No member with that member nick!',
 	BLOCKED_USER = 'You have been blocked!',
 	WRONG_PASSWORD = 'Wrong password, try again!',
+	ACCESS_TOKEN_EXPIRED = 'Access token expired!',
+	INVALID_ACCESS_TOKEN = 'Invalid access token!',
 	INVALID_REFRESH_TOKEN = 'Invalid refresh token!',
 	LOGOUT_SUCCESS = 'Logout completed successfully!',
 	NOT_AUTHENTICATED = 'You are not authenticated, please login first!',
