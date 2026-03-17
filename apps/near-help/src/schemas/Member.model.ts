@@ -60,6 +60,16 @@ const MemberSchema = new Schema(
 			required: true,
 		},
 
+		memberRefreshToken: {
+			type: String,
+			select: false,
+		},
+
+		memberRefreshTokenExpiresAt: {
+			type: Date,
+			select: false,
+		},
+
 		memberFullName: {
 			type: String,
 		},

@@ -20,6 +20,8 @@ export class Member {
 	memberNick!: string;
 
 	memberPassword?: string;
+	memberRefreshToken?: string;
+	memberRefreshTokenExpiresAt?: Date;
 
 	@Field(() => String, { nullable: true })
 	memberFullName?: string;
