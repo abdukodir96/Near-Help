@@ -41,3 +41,19 @@ export const getErrorCodeByStatus = (status?: number): ErrorCode | undefined => 
 	if (typeof status !== 'number') return undefined;
 	return STATUS_CODE_TO_ERROR_CODE[status];
 };
+
+const GRAPHQL_CODE_TO_ERROR_CODE: Record<string, ErrorCode> = {
+	BAD_USER_INPUT: ErrorCode.BAD_REQUEST,
+	GRAPHQL_PARSE_FAILED: ErrorCode.BAD_REQUEST,
+	GRAPHQL_VALIDATION_FAILED: ErrorCode.BAD_REQUEST,
+	UNAUTHENTICATED: ErrorCode.UNAUTHENTICATED,
+	FORBIDDEN: ErrorCode.FORBIDDEN,
+	NOT_FOUND: ErrorCode.NOT_FOUND,
+	CONFLICT: ErrorCode.CONFLICT,
+	INTERNAL_SERVER_ERROR: ErrorCode.INTERNAL_SERVER_ERROR,
+};
+
+export const getErrorCodeByGraphQLCode = (code?: string): ErrorCode | undefined => {
+	if (!code) return undefined;
+	return GRAPHQL_CODE_TO_ERROR_CODE[code];
+};
