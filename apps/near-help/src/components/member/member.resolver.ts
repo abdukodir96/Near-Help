@@ -7,6 +7,9 @@ import { Member } from '../../libs/dto/member/member';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../../libs/guards/gql-auth.guard';
 import { AuthMember } from '../../libs/decorators/auth-member.decorator';
+import { Roles } from '../../libs/decorators/roles.decorator';
+import { MemberType } from '../../libs/enums/member.enum';
+import { RolesGuard } from '../../libs/guards/roles.guard';
 
 @Resolver()
 export class MemberResolver {
@@ -36,7 +39,8 @@ export class MemberResolver {
 		return this.memberService.logout(input);
 	}
 
-	@UseGuards(GqlAuthGuard)
+	@UseGuards(GqlAuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
 	@Mutation(() => Member)
 	public async updateMember(
 		@AuthMember('_id') memberId: string,

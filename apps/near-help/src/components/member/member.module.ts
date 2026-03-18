@@ -5,9 +5,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import MemberSchema from '../../schemas/Member.model';
 import { AuthModule } from '../auth/auth.module';
 import { GqlAuthGuard } from '../../libs/guards/gql-auth.guard';
+import { RolesGuard } from '../../libs/guards/roles.guard';
 
 @Module({
 	imports: [MongooseModule.forFeature([{ name: 'Member', schema: MemberSchema }]), AuthModule],
-	providers: [MemberResolver, MemberService, GqlAuthGuard],
+	providers: [MemberResolver, MemberService, GqlAuthGuard, RolesGuard],
 })
 export class MemberModule {}
