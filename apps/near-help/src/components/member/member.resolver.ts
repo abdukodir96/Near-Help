@@ -53,12 +53,19 @@ export class MemberResolver {
 		return await this.memberService.updateMember(memberId, input);
 	}
 
+	@UseGuards(AuthGuard)
+	@Mutation(() => String)
+	public checkAuth(@AuthMember('_id') memberId: string): string {
+		console.log('Mutation: checkAuth');
+		return `Authenticated member id: ${memberId}`;
+	}
+
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.ADMIN)
 	@Mutation(() => String)
-	public adminOnlyCheck(): string {
-		console.log('Mutation: adminOnlyCheck');
-		return 'Admin access granted!';
+	public checkAuthRole(@AuthMember('_id') memberId: string): string {
+		console.log('Mutation: checkAuthRole');
+		return `Admin role verified for member id: ${memberId}`;
 	}
 
 	@Query(() => String)
