@@ -278,6 +278,8 @@ export class MemberService {
 				{ memberPhone: regex },
 				{ memberEmail: regex },
 				{ memberTelegramId: regex },
+				{ memberAddress: regex },
+				{ memberDesc: regex },
 			];
 		}
 
