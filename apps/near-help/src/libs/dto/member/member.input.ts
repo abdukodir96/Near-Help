@@ -1,5 +1,15 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
+import {
+	IsEmail,
+	IsEnum,
+	IsMongoId,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	Length,
+	Matches,
+	ValidateIf,
+} from 'class-validator';
 import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
 
 @InputType()
@@ -180,4 +190,13 @@ export class UpdateMemberByAdminInput {
 	@IsEnum(MemberAuthType)
 	@Field(() => MemberAuthType, { nullable: true })
 	memberAuthType?: MemberAuthType;
+}
+
+@InputType()
+export class GetMemberInput {
+	@IsOptional()
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String, { nullable: true })
+	targetMemberId?: string;
 }

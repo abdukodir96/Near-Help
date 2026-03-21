@@ -14,6 +14,7 @@ import { Message } from '../../libs/enums/common.enum';
 import { MemberStatus } from '../../libs/enums/member.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { ArticleStatus } from '../../libs/enums/article.enum';
+import { createHash } from 'crypto';
 
 type ViewRecord = {
 	viewGroup: ViewGroup;
@@ -48,8 +49,12 @@ export class ViewService {
 		@InjectModel('Article') private readonly articleModel: Model<ArticleViewTarget>,
 	) {}
 
-	public async recordView(memberId: string, input: RecordViewInput): Promise<RecordViewResponse> {
-		await this.ensureViewerCanRecord(memberId);
+	public async recordView(
+		memberId: string | null,
+		guestKey: string | null,
+		input: RecordViewInput,
+	): Promise<RecordViewResponse> {
+		const viewerMemberId = await this.resolveViewerMemberId(memberId, guestKey);
 
 		const { viewGroup, viewRefId } = input;
 		const currentViews = await this.getCurrentViews(viewGroup, viewRefId);
@@ -58,7 +63,7 @@ export class ViewService {
 			await this.viewModel.create({
 				viewGroup,
 				viewRefId,
-				memberId,
+				memberId: viewerMemberId,
 			});
 
 			const totalViews = await this.incrementViews(viewGroup, viewRefId);
@@ -83,6 +88,19 @@ export class ViewService {
 		}
 	}
 
+	private async resolveViewerMemberId(memberId: string | null, guestKey: string | null): Promise<string> {
+		if (memberId) {
+			await this.ensureViewerCanRecord(memberId);
+			return memberId;
+		}
+
+		if (!guestKey) {
+			throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+		}
+
+		return this.getGuestMemberId(guestKey);
+	}
+
 	private async ensureViewerCanRecord(memberId: string): Promise<void> {
 		const viewer = await this.memberModel.findById(memberId).select({ memberStatus: 1 }).exec();
 
@@ -93,6 +111,10 @@ export class ViewService {
 		if (viewer.memberStatus === MemberStatus.BLOCKED) {
 			throw new ForbiddenException(Message.BLOCKED_USER);
 		}
+	}
+
+	private getGuestMemberId(guestKey: string): string {
+		return createHash('sha256').update(`near-help-guest:${guestKey}`).digest('hex').slice(0, 24);
 	}
 
 	private async getCurrentViews(viewGroup: ViewGroup, viewRefId: string): Promise<number> {

@@ -7,7 +7,7 @@ import ServiceSchema from '../../schemas/Service.model';
 import ArticleSchema from '../../schemas/Article.model';
 import { ViewResolver } from './view.resolver';
 import { ViewService } from './view.service';
-import { AuthGuard } from '../../libs/guards/auth.guard';
+import { WithoutGuard } from '../../libs/guards/without.guard';
 
 @Module({
 	imports: [
@@ -19,6 +19,7 @@ import { AuthGuard } from '../../libs/guards/auth.guard';
 		]),
 		AuthModule,
 	],
-	providers: [ViewResolver, ViewService, AuthGuard],
+	providers: [ViewResolver, ViewService, WithoutGuard],
+	exports: [ViewService],
 })
 export class ViewModule {}

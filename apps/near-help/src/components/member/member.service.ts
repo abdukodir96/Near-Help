@@ -10,6 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
 	GetAllMembersByAdminInput,
+	GetMemberInput,
 	LoginInput,
 	MemberInput,
 	UpdateMemberByAdminInput,
@@ -21,12 +22,15 @@ import { Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
+import { ViewService } from '../view/view.service';
+import { ViewGroup } from '../../libs/enums/view.enum';
 
 @Injectable()
 export class MemberService {
 	constructor(
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		private readonly authService: AuthService,
+		private readonly viewService: ViewService,
 	) {}
 
 	public async signup(input: MemberInput): Promise<AuthResponse> {
@@ -181,8 +185,9 @@ export class MemberService {
 		}
 	}
 
-	public async getMember(memberId: string): Promise<MemberPrivate> {
-		const member = await this.memberModel.findById(memberId).exec();
+	public async getMember(memberId: string, targetMemberId?: GetMemberInput['targetMemberId']): Promise<MemberPrivate> {
+		const lookupMemberId = targetMemberId ?? memberId;
+		const member = await this.memberModel.findById(lookupMemberId).exec();
 
 		if (!member || member.memberStatus === MemberStatus.DELETED) {
 			throw new NotFoundException(Message.NO_DATA_FOUND);
@@ -190,6 +195,13 @@ export class MemberService {
 
 		if (member.memberStatus === MemberStatus.BLOCKED) {
 			throw new ForbiddenException(Message.BLOCKED_USER);
+		}
+
+		if (lookupMemberId !== memberId) {
+			await this.viewService.recordView(memberId, null, {
+				viewGroup: ViewGroup.MEMBER,
+				viewRefId: lookupMemberId,
+			});
 		}
 
 		return member as MemberPrivate;
