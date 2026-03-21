@@ -8,7 +8,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
+import {
+	GetAllMembersByAdminInput,
+	LoginInput,
+	MemberInput,
+	UpdateMemberByAdminInput,
+	UpdateMemberInput,
+} from '../../libs/dto/member/member.input';
 import { Member, MemberPrivate } from '../../libs/dto/member/member';
 import { MemberStatus } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
@@ -187,6 +193,67 @@ export class MemberService {
 		}
 
 		return member as MemberPrivate;
+	}
+
+	public async getAllMembersByAdmin(input?: GetAllMembersByAdminInput): Promise<MemberPrivate[]> {
+		const filter: Record<string, unknown> = {};
+
+		if (input?.memberType) {
+			filter.memberType = input.memberType;
+		}
+
+		if (input?.memberStatus) {
+			filter.memberStatus = input.memberStatus;
+		}
+
+		const searchText = input?.searchText?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [
+				{ memberNick: regex },
+				{ memberFullName: regex },
+				{ memberPhone: regex },
+				{ memberEmail: regex },
+				{ memberTelegramId: regex },
+			];
+		}
+
+		const members = await this.memberModel.find(filter).sort({ createdAt: -1 }).exec();
+		return members as MemberPrivate[];
+	}
+
+	public async updateMemberByAdmin(input: UpdateMemberByAdminInput): Promise<MemberPrivate> {
+		const { targetMemberId, ...rest } = input;
+		const payload = Object.fromEntries(
+			Object.entries(rest).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+
+		if (!targetMemberId || Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const existingMember = await this.memberModel.findById(targetMemberId).exec();
+		if (!existingMember) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		try {
+			const updatedMember = await this.memberModel
+				.findByIdAndUpdate(targetMemberId, { $set: payload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedMember) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedMember as MemberPrivate;
+		} catch (err: unknown) {
+			const mongoError = err as { code?: number };
+			if (mongoError?.code === 11000) {
+				throw new ConflictException(Message.USED_MEMBER_NICK_OR_PHONE);
+			}
+			throw err;
+		}
 	}
 
 	private async issueTokensForMember(memberId: unknown): Promise<AuthResponse> {

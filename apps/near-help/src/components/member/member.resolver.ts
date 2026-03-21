@@ -1,6 +1,12 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { MemberService } from './member.service';
-import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
+import {
+	GetAllMembersByAdminInput,
+	LoginInput,
+	MemberInput,
+	UpdateMemberByAdminInput,
+	UpdateMemberInput,
+} from '../../libs/dto/member/member.input';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
 import { Member, MemberPrivate } from '../../libs/dto/member/member';
@@ -73,5 +79,23 @@ export class MemberResolver {
 	public async getMember(@AuthMember('_id') memberId: string): Promise<MemberPrivate> {
 		console.log('Query: getMember');
 		return this.memberService.getMember(memberId);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Query(() => [MemberPrivate])
+	public async getAllMembersByAdmin(
+		@Args('input', { nullable: true }) input?: GetAllMembersByAdminInput,
+	): Promise<MemberPrivate[]> {
+		console.log('Query: getAllMembersByAdmin');
+		return this.memberService.getAllMembersByAdmin(input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Mutation(() => MemberPrivate)
+	public async updateMemberByAdmin(@Args('input') input: UpdateMemberByAdminInput): Promise<MemberPrivate> {
+		console.log('Mutation: updateMemberByAdmin');
+		return this.memberService.updateMemberByAdmin(input);
 	}
 }
