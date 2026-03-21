@@ -3,7 +3,12 @@ import { IsEnum, IsMongoId, IsNotEmpty } from 'class-validator';
 import { ViewGroup } from '../../enums/view.enum';
 
 @InputType()
-export class RecordViewInput {
+export class ViewInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	memberId!: string;
+
 	@IsNotEmpty()
 	@IsEnum(ViewGroup)
 	@Field(() => ViewGroup)

@@ -198,10 +198,16 @@ export class MemberService {
 		}
 
 		if (lookupMemberId !== memberId) {
-			await this.viewService.recordView(memberId, null, {
+			const createdView = await this.viewService.recordView({
+				memberId,
 				viewGroup: ViewGroup.MEMBER,
 				viewRefId: lookupMemberId,
 			});
+
+			if (createdView) {
+				await this.memberModel.updateOne({ _id: lookupMemberId }, { $inc: { memberViews: 1 } }).exec();
+				member.memberViews += 1;
+			}
 		}
 
 		return member as MemberPrivate;

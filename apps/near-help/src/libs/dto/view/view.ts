@@ -1,10 +1,11 @@
-import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import * as mongoose from 'mongoose';
 import { ViewGroup } from '../../enums/view.enum';
 
 @ObjectType()
-export class RecordViewResponse {
-	@Field(() => Boolean)
-	recorded!: boolean;
+export class View {
+	@Field(() => ID)
+	_id!: mongoose.ObjectId;
 
 	@Field(() => ViewGroup)
 	viewGroup!: ViewGroup;
@@ -12,6 +13,12 @@ export class RecordViewResponse {
 	@Field(() => String)
 	viewRefId!: string;
 
-	@Field(() => Int)
-	totalViews!: number;
+	@Field(() => String)
+	memberId!: string;
+
+	@Field(() => Date)
+	createdAt!: Date;
+
+	@Field(() => Date)
+	updatedAt!: Date;
 }
