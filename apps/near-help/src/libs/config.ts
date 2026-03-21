@@ -11,6 +11,13 @@ export const authConfig = {
 	refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
 };
 
+export const uploadConfig = {
+	rootDir: process.env.UPLOAD_ROOT_DIR ?? 'uploads',
+	imageDir: process.env.UPLOAD_IMAGE_DIR ?? 'images',
+	maxImageBytes: parsePositiveInt(process.env.UPLOAD_MAX_IMAGE_BYTES, 5 * 1024 * 1024),
+	maxImageFiles: parsePositiveInt(process.env.UPLOAD_MAX_IMAGE_FILES, 10),
+};
+
 export const getAccessTokenSecret = (): string => {
 	const secret = process.env.JWT_ACCESS_SECRET;
 	if (secret) return secret;

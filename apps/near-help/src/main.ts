@@ -2,9 +2,25 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './libs/interceptors/Logging.interceptor';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { graphqlUploadExpress } from 'graphql-upload';
+import { uploadConfig } from './libs/config';
+import { join } from 'path';
+import { RequestHandler } from 'express';
+
+type CreateGraphQLUploadMiddleware = (options: { maxFileSize: number; maxFiles: number }) => RequestHandler;
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule);
+	const app = await NestFactory.create<NestExpressApplication>(AppModule);
+	const createUploadMiddleware = graphqlUploadExpress as unknown as CreateGraphQLUploadMiddleware;
+	const uploadMiddleware = createUploadMiddleware({
+		maxFileSize: uploadConfig.maxImageBytes,
+		maxFiles: uploadConfig.maxImageFiles,
+	});
+	app.use('/graphql', uploadMiddleware);
+	app.useStaticAssets(join(process.cwd(), uploadConfig.rootDir), {
+		prefix: `/${uploadConfig.rootDir}/`,
+	});
 	app.useGlobalPipes(
 		new ValidationPipe({
 			transform: true,
