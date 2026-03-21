@@ -10,17 +10,20 @@ import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
+import { WithoutGuard } from '../../libs/guards/without.guard';
 
 @Resolver()
 export class MemberResolver {
 	constructor(private readonly memberService: MemberService) {}
 
+	@UseGuards(WithoutGuard)
 	@Mutation(() => AuthResponse)
 	public async signup(@Args('input') input: MemberInput): Promise<AuthResponse> {
 		console.log('Mutation: signup');
 		return this.memberService.signup(input);
 	}
 
+	@UseGuards(WithoutGuard)
 	@Mutation(() => AuthResponse)
 	public async login(@Args('input') input: LoginInput): Promise<AuthResponse> {
 		console.log('Mutation: login');
@@ -48,6 +51,14 @@ export class MemberResolver {
 	): Promise<Member> {
 		console.log('Mutation: updateMember');
 		return await this.memberService.updateMember(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Mutation(() => String)
+	public adminOnlyCheck(): string {
+		console.log('Mutation: adminOnlyCheck');
+		return 'Admin access granted!';
 	}
 
 	@Query(() => String)
