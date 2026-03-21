@@ -17,7 +17,7 @@ import {
 	UpdateMemberByAdminInput,
 	UpdateMemberInput,
 } from '../../libs/dto/member/member.input';
-import { AgentsResult, Member, MemberPrivate } from '../../libs/dto/member/member';
+import { AgentsResult, Member, MemberPrivate, MembersByAdminResult } from '../../libs/dto/member/member';
 import { AgentSort, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
@@ -258,7 +258,7 @@ export class MemberService {
 		};
 	}
 
-	public async getAllMembersByAdmin(input?: GetAllMembersByAdminInput): Promise<MemberPrivate[]> {
+	public async getAllMembersByAdmin(input?: GetAllMembersByAdminInput): Promise<MembersByAdminResult> {
 		const filter: Record<string, unknown> = {};
 
 		if (input?.memberType) {
@@ -281,8 +281,30 @@ export class MemberService {
 			];
 		}
 
-		const members = await this.memberModel.find(filter).sort({ createdAt: -1 }).exec();
-		return members as MemberPrivate[];
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+		const totalCount = await this.memberModel.countDocuments(filter).exec();
+
+		const members = await this.memberModel
+			.find(filter)
+			.sort({ createdAt: -1 })
+			.skip((page - 1) * limit)
+			.limit(limit)
+			.exec();
+
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: members as MemberPrivate[],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
+		};
 	}
 
 	public async updateMemberByAdmin(input: UpdateMemberByAdminInput): Promise<MemberPrivate> {

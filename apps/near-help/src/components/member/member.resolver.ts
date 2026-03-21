@@ -11,7 +11,7 @@ import {
 } from '../../libs/dto/member/member.input';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
-import { AgentsResult, Member, MemberPrivate } from '../../libs/dto/member/member';
+import { AgentsResult, Member, MemberPrivate, MembersByAdminResult } from '../../libs/dto/member/member';
 import { UseGuards } from '@nestjs/common';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { Roles } from '../../libs/decorators/roles.decorators';
@@ -94,10 +94,10 @@ export class MemberResolver {
 
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.ADMIN)
-	@Query(() => [MemberPrivate])
+	@Query(() => MembersByAdminResult)
 	public async getAllMembersByAdmin(
 		@Args('input', { nullable: true }) input?: GetAllMembersByAdminInput,
-	): Promise<MemberPrivate[]> {
+	): Promise<MembersByAdminResult> {
 		console.log('Query: getAllMembersByAdmin');
 		return this.memberService.getAllMembersByAdmin(input);
 	}

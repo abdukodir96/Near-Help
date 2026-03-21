@@ -119,3 +119,12 @@ export class AgentsResult {
 	@Field(() => PaginationMeta)
 	meta!: PaginationMeta;
 }
+
+@ObjectType()
+export class MembersByAdminResult {
+	@Field(() => [MemberPrivate])
+	list!: MemberPrivate[];
+
+	@Field(() => PaginationMeta)
+	meta!: PaginationMeta;
+}

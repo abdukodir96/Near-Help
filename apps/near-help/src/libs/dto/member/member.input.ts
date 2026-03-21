@@ -130,6 +130,19 @@ export class GetAllMembersByAdminInput {
 	@Length(1, 40)
 	@Field(() => String, { nullable: true })
 	searchText?: string;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
 }
 
 @InputType()
