@@ -1,24 +1,16 @@
-import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { GqlContextType } from '@nestjs/graphql';
 import { AuthService } from '../../components/auth/auth.service';
 import { Message } from '../enums/common.enum';
-import { ROLES_KEY } from '../decorators/roles.decorators';
 import { AuthMemberPayload } from '../types/auth';
 import { getAuthRequest } from '../utils/auth-context.util';
 
 @Injectable()
-export class RolesGuard implements CanActivate {
-	constructor(
-		private readonly reflector: Reflector,
-		private readonly authService: AuthService,
-	) {}
+export class AuthGuard implements CanActivate {
+	constructor(private readonly authService: AuthService) {}
 
 	public async canActivate(context: ExecutionContext): Promise<boolean> {
-		const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
-		if (!roles) return true;
-
-		console.info(`--- @guard() Authentication [RolesGuard]: ${roles.join(',')} ---`);
+		console.info('--- @guard() Authentication [AuthGuard] ---');
 
 		if (context.getType<GqlContextType>() !== 'graphql') {
 			return false;
@@ -30,20 +22,17 @@ export class RolesGuard implements CanActivate {
 
 		const token = this.extractToken(bearerToken);
 		const decodedToken = await this.authService.verifyToken(token);
+		if (!decodedToken) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+
 		const authMember: AuthMemberPayload = {
 			_id: decodedToken.sub,
 			memberType: decodedToken.memberType,
 			memberStatus: decodedToken.memberStatus,
 			memberAuthType: decodedToken.memberAuthType,
 		};
-		const hasPermission = roles.indexOf(authMember.memberType) > -1;
-
-		if (!hasPermission) {
-			throw new ForbiddenException(Message.ONLY_SPECIFIC_ROLES_ALLOWED);
-		}
 
 		request.body.authMember = authMember;
-		console.log('memberId[roles] =>', authMember._id);
+		console.log('memberId[auth] =>', authMember._id);
 		return true;
 	}
 

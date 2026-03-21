@@ -1,14 +1,20 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthMemberPayload } from '../types/auth';
+import { getAuthRequest } from '../utils/auth-context.util';
 
 export const AuthMember = createParamDecorator(
-	(data: keyof AuthMemberPayload | undefined, context: ExecutionContext): AuthMemberPayload | string | undefined => {
-		const gqlContext = GqlExecutionContext.create(context);
-		const req = gqlContext.getContext<{ req?: { member?: AuthMemberPayload } }>().req;
-		const member = req?.member;
+	(data: keyof AuthMemberPayload | undefined, context: ExecutionContext): AuthMemberPayload | string | null => {
+		const request = getAuthRequest(context);
+		const member = request.body.authMember;
 
-		if (!member) return undefined;
-		return data ? member[data] : member;
+		if (member && request.headers?.authorization) {
+			member.authorization = request.headers.authorization;
+		}
+
+		if (!member) return null;
+
+		if (!data) return member;
+		const value = member[data];
+		return typeof value === 'undefined' ? null : value;
 	},
 );

@@ -5,4 +5,14 @@ export type AuthMemberPayload = {
 	memberType: MemberType;
 	memberStatus: MemberStatus;
 	memberAuthType: MemberAuthType;
+	authorization?: string;
+};
+
+export type AuthRequest = {
+	headers?: {
+		authorization?: string;
+	};
+	body: {
+		authMember?: AuthMemberPayload | null;
+	};
 };

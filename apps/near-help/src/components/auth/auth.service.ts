@@ -125,6 +125,10 @@ export class AuthService {
 		}
 	}
 
+	public async verifyToken(token: string): Promise<MemberTokenPayload> {
+		return this.verifyAccessToken(token);
+	}
+
 	private extractExpirationDate(payload: unknown): Date | undefined {
 		if (!payload || typeof payload !== 'object') return undefined;
 
