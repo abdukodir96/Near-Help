@@ -9,6 +9,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+	GetAgentsInput,
 	GetAllMembersByAdminInput,
 	GetMemberInput,
 	LoginInput,
@@ -17,7 +18,7 @@ import {
 	UpdateMemberInput,
 } from '../../libs/dto/member/member.input';
 import { Member, MemberPrivate } from '../../libs/dto/member/member';
-import { MemberStatus } from '../../libs/enums/member.enum';
+import { AgentSort, MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
@@ -213,6 +214,37 @@ export class MemberService {
 		return member as MemberPrivate;
 	}
 
+	public async getAgents(input?: GetAgentsInput): Promise<Member[]> {
+		const filter: Record<string, unknown> = {
+			memberType: MemberType.AGENT,
+			memberStatus: MemberStatus.ACTIVE,
+		};
+
+		const searchText = input?.searchText?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [{ memberNick: regex }, { memberFullName: regex }, { memberAddress: regex }, { memberDesc: regex }];
+		}
+
+		const memberAddress = input?.memberAddress?.trim();
+		if (memberAddress) {
+			filter.memberAddress = new RegExp(memberAddress, 'i');
+		}
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+		const sort = this.getAgentSort(input?.sortBy);
+
+		const agents = await this.memberModel
+			.find(filter)
+			.sort(sort)
+			.skip((page - 1) * limit)
+			.limit(limit)
+			.exec();
+
+		return agents as Member[];
+	}
+
 	public async getAllMembersByAdmin(input?: GetAllMembersByAdminInput): Promise<MemberPrivate[]> {
 		const filter: Record<string, unknown> = {};
 
@@ -303,5 +335,19 @@ export class MemberService {
 			accessToken: tokenSet.accessToken,
 			refreshToken: tokenSet.refreshToken,
 		};
+	}
+
+	private getAgentSort(sortBy?: AgentSort): Record<string, 1 | -1> {
+		switch (sortBy) {
+			case AgentSort.OLDER:
+				return { createdAt: 1 };
+			case AgentSort.LIKES:
+				return { memberLikes: -1, createdAt: -1 };
+			case AgentSort.VIEWS:
+				return { memberViews: -1, createdAt: -1 };
+			case AgentSort.RECENT:
+			default:
+				return { createdAt: -1 };
+		}
 	}
 }

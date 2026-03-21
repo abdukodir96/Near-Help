@@ -1,16 +1,19 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import {
 	IsEmail,
 	IsEnum,
+	IsInt,
 	IsMongoId,
 	IsNotEmpty,
 	IsOptional,
 	IsString,
 	Length,
 	Matches,
+	Max,
+	Min,
 	ValidateIf,
 } from 'class-validator';
-import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
+import { AgentSort, MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
 
 @InputType()
 export class MemberInput {
@@ -199,4 +202,35 @@ export class GetMemberInput {
 	@IsMongoId()
 	@Field(() => String, { nullable: true })
 	targetMemberId?: string;
+}
+
+@InputType()
+export class GetAgentsInput {
+	@IsOptional()
+	@Length(1, 40)
+	@Field(() => String, { nullable: true })
+	searchText?: string;
+
+	@IsOptional()
+	@Length(2, 120)
+	@Field(() => String, { nullable: true })
+	memberAddress?: string;
+
+	@IsOptional()
+	@IsEnum(AgentSort)
+	@Field(() => AgentSort, { nullable: true })
+	sortBy?: AgentSort;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
 }

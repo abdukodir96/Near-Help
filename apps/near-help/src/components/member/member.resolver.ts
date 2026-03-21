@@ -1,6 +1,7 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { MemberService } from './member.service';
 import {
+	GetAgentsInput,
 	GetMemberInput,
 	GetAllMembersByAdminInput,
 	LoginInput,
@@ -83,6 +84,12 @@ export class MemberResolver {
 	): Promise<MemberPrivate> {
 		console.log('Query: getMember');
 		return this.memberService.getMember(memberId, input?.targetMemberId);
+	}
+
+	@Query(() => [Member])
+	public async getAgents(@Args('input', { nullable: true }) input?: GetAgentsInput): Promise<Member[]> {
+		console.log('Query: getAgents');
+		return this.memberService.getAgents(input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

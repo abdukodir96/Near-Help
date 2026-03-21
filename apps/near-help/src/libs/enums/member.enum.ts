@@ -22,3 +22,11 @@ export enum MemberAuthType {
 registerEnumType(MemberAuthType, {
 	name: 'MemberAuthType',
 });
+
+export enum AgentSort {
+	RECENT = 'RECENT',
+	OLDER = 'OLDER',
+	LIKES = 'LIKES',
+	VIEWS = 'VIEWS',
+}
+registerEnumType(AgentSort, { name: 'AgentSort' });
