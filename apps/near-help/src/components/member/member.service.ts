@@ -9,7 +9,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
-import { Member } from '../../libs/dto/member/member';
+import { Member, MemberPrivate } from '../../libs/dto/member/member';
 import { MemberStatus } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
 import { AuthService } from '../auth/auth.service';
@@ -175,9 +175,18 @@ export class MemberService {
 		}
 	}
 
-	public async getMember(): Promise<string> {
-		await Promise.resolve();
-		return 'getMember executed!';
+	public async getMember(memberId: string): Promise<MemberPrivate> {
+		const member = await this.memberModel.findById(memberId).exec();
+
+		if (!member || member.memberStatus === MemberStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		if (member.memberStatus === MemberStatus.BLOCKED) {
+			throw new ForbiddenException(Message.BLOCKED_USER);
+		}
+
+		return member as MemberPrivate;
 	}
 
 	private async issueTokensForMember(memberId: unknown): Promise<AuthResponse> {

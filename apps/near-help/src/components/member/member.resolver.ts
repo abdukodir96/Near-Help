@@ -3,7 +3,7 @@ import { MemberService } from './member.service';
 import { LoginInput, MemberInput, UpdateMemberInput } from '../../libs/dto/member/member.input';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
-import { Member } from '../../libs/dto/member/member';
+import { Member, MemberPrivate } from '../../libs/dto/member/member';
 import { UseGuards } from '@nestjs/common';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { Roles } from '../../libs/decorators/roles.decorators';
@@ -68,9 +68,10 @@ export class MemberResolver {
 		return `Admin role verified for member id: ${memberId}`;
 	}
 
-	@Query(() => String)
-	public async getMember(): Promise<string> {
+	@UseGuards(AuthGuard)
+	@Query(() => MemberPrivate)
+	public async getMember(@AuthMember('_id') memberId: string): Promise<MemberPrivate> {
 		console.log('Query: getMember');
-		return this.memberService.getMember();
+		return this.memberService.getMember(memberId);
 	}
 }
