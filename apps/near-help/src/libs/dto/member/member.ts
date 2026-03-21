@@ -89,3 +89,33 @@ export class MemberPrivate extends Member {
 	@Field(() => String, { nullable: true })
 	memberTelegramId?: string;
 }
+
+@ObjectType()
+export class PaginationMeta {
+	@Field(() => Int)
+	totalCount!: number;
+
+	@Field(() => Int)
+	page!: number;
+
+	@Field(() => Int)
+	limit!: number;
+
+	@Field(() => Int)
+	totalPages!: number;
+
+	@Field(() => Boolean)
+	hasNextPage!: boolean;
+
+	@Field(() => Boolean)
+	hasPrevPage!: boolean;
+}
+
+@ObjectType()
+export class AgentsResult {
+	@Field(() => [Member])
+	list!: Member[];
+
+	@Field(() => PaginationMeta)
+	meta!: PaginationMeta;
+}

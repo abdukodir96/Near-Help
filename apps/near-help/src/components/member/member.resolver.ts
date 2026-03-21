@@ -11,7 +11,7 @@ import {
 } from '../../libs/dto/member/member.input';
 import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/auth';
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
-import { Member, MemberPrivate } from '../../libs/dto/member/member';
+import { AgentsResult, Member, MemberPrivate } from '../../libs/dto/member/member';
 import { UseGuards } from '@nestjs/common';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { Roles } from '../../libs/decorators/roles.decorators';
@@ -86,8 +86,8 @@ export class MemberResolver {
 		return this.memberService.getMember(memberId, input?.targetMemberId);
 	}
 
-	@Query(() => [Member])
-	public async getAgents(@Args('input', { nullable: true }) input?: GetAgentsInput): Promise<Member[]> {
+	@Query(() => AgentsResult)
+	public async getAgents(@Args('input', { nullable: true }) input?: GetAgentsInput): Promise<AgentsResult> {
 		console.log('Query: getAgents');
 		return this.memberService.getAgents(input);
 	}
