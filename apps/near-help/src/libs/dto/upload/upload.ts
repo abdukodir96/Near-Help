@@ -11,6 +11,9 @@ export class UploadedImage {
 	@Field(() => String)
 	mimetype!: string;
 
+	@Field(() => String)
+	originalMimeType!: string;
+
 	@Field(() => Int)
 	size!: number;
 

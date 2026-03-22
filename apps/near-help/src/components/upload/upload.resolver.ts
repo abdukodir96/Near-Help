@@ -8,12 +8,16 @@ import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { GraphQLScalarType } from 'graphql';
 import { UploadFile } from '../../libs/types/upload';
 import { Message } from '../../libs/enums/common.enum';
+import { MemberService } from '../member/member.service';
 
 const UploadScalar = GraphQLUpload as unknown as GraphQLScalarType;
 
 @Resolver()
 export class UploadResolver {
-	constructor(private readonly uploadService: UploadService) {}
+	constructor(
+		private readonly uploadService: UploadService,
+		private readonly memberService: MemberService,
+	) {}
 
 	@UseGuards(AuthGuard)
 	@Mutation(() => UploadedImage)
@@ -23,6 +27,7 @@ export class UploadResolver {
 	): Promise<UploadedImage> {
 		console.log('Mutation: uploadSingleImage');
 		const uploadedImage = await this.uploadService.uploadSingleImage(await this.normalizeUploadFile(file), memberId);
+		await this.memberService.updateMember(memberId, { memberImage: uploadedImage.url });
 		return uploadedImage;
 	}
 

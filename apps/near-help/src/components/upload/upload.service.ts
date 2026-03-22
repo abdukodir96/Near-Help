@@ -32,16 +32,17 @@ export class UploadService {
 	}
 
 	private async saveImage(file: UploadFile, memberId: string): Promise<UploadedImage> {
-		const mimeType = file.mimetype.toLowerCase();
+		const originalMimeType = file.mimetype.toLowerCase();
 		const fileExtension = extname(file.filename).toLowerCase();
-		const mimeAllowed = ALLOWED_IMAGE_MIME_TYPES.has(mimeType);
+		const mimeAllowed = ALLOWED_IMAGE_MIME_TYPES.has(originalMimeType);
 		const extensionAllowed = ALLOWED_IMAGE_EXTENSIONS.has(fileExtension);
 
 		if (!mimeAllowed && !extensionAllowed) {
 			throw new BadRequestException(Message.PROVIDE_ALLOWED_FORMAT);
 		}
 
-		const extension = this.resolveExtension(mimeType, fileExtension);
+		const extension = this.resolveExtension(originalMimeType, fileExtension);
+		const normalizedMimeType = this.resolveMimeType(originalMimeType, fileExtension);
 		const targetDir = join(process.cwd(), uploadConfig.rootDir, uploadConfig.imageDir, memberId);
 		await mkdir(targetDir, { recursive: true });
 
@@ -60,7 +61,8 @@ export class UploadService {
 		return {
 			filename,
 			originalName: file.filename,
-			mimetype: mimeType,
+			mimetype: normalizedMimeType,
+			originalMimeType,
 			size: fileStat.size,
 			url,
 		};
@@ -79,6 +81,22 @@ export class UploadService {
 				if (ALLOWED_IMAGE_EXTENSIONS.has(fileExtension)) {
 					return fileExtension === '.jpeg' ? '.jpg' : fileExtension;
 				}
+				throw new BadRequestException(Message.PROVIDE_ALLOWED_FORMAT);
+		}
+	}
+
+	private resolveMimeType(mimeType: string, fileExtension: string): string {
+		switch (mimeType) {
+			case 'image/jpeg':
+			case 'image/jpg':
+			case 'image/pjpeg':
+				return 'image/jpeg';
+			case 'image/png':
+			case 'image/x-png':
+				return 'image/png';
+			default:
+				if (fileExtension === '.png') return 'image/png';
+				if (fileExtension === '.jpg' || fileExtension === '.jpeg') return 'image/jpeg';
 				throw new BadRequestException(Message.PROVIDE_ALLOWED_FORMAT);
 		}
 	}
