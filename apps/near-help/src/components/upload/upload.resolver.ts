@@ -5,9 +5,9 @@ import { UploadedImage } from '../../libs/dto/upload/upload';
 import { BadRequestException, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
-import { Message } from '../../libs/enums/common.enum';
-import { UploadFile } from '../../libs/types/upload';
 import { GraphQLScalarType } from 'graphql';
+import { UploadFile } from '../../libs/types/upload';
+import { Message } from '../../libs/enums/common.enum';
 
 const UploadScalar = GraphQLUpload as unknown as GraphQLScalarType;
 
@@ -19,11 +19,10 @@ export class UploadResolver {
 	@Mutation(() => UploadedImage)
 	public async uploadSingleImage(
 		@AuthMember('_id') memberId: string,
-		@Args({ name: 'file', type: () => UploadScalar }) file: Promise<unknown>,
+		@Args({ name: 'file', type: () => UploadScalar }) file: unknown,
 	): Promise<UploadedImage> {
 		console.log('Mutation: uploadSingleImage');
-		const normalizedFile = this.toUploadFile(await file);
-		const uploadedImage = await this.uploadService.uploadSingleImage(normalizedFile, memberId);
+		const uploadedImage = await this.uploadService.uploadSingleImage(await this.normalizeUploadFile(file), memberId);
 		return uploadedImage;
 	}
 
@@ -31,20 +30,21 @@ export class UploadResolver {
 	@Mutation(() => [UploadedImage])
 	public async uploadMultipleImages(
 		@AuthMember('_id') memberId: string,
-		@Args({ name: 'files', type: () => [UploadScalar] }) files: Array<Promise<unknown>>,
+		@Args({ name: 'files', type: () => [UploadScalar] }) files: unknown[],
 	): Promise<UploadedImage[]> {
 		console.log('Mutation: uploadMultipleImages');
-		const normalizedFiles = await Promise.all(files.map(async (file) => this.toUploadFile(await file)));
+		const normalizedFiles = await Promise.all(files.map((file) => this.normalizeUploadFile(file)));
 		const uploadedImages = await this.uploadService.uploadMultipleImages(normalizedFiles, memberId);
 		return uploadedImages;
 	}
 
-	private toUploadFile(file: unknown): UploadFile {
-		if (!file || typeof file !== 'object') {
+	private async normalizeUploadFile(source: unknown): Promise<UploadFile> {
+		const resolved = await Promise.resolve(source);
+		if (!resolved || typeof resolved !== 'object') {
 			throw new BadRequestException(Message.BAD_REQUEST);
 		}
 
-		const maybeUpload = file as Partial<UploadFile>;
+		const maybeUpload = resolved as Partial<UploadFile>;
 		if (
 			typeof maybeUpload.filename !== 'string' ||
 			typeof maybeUpload.mimetype !== 'string' ||

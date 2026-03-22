@@ -35,8 +35,8 @@ export const formatGraphQLErrorResponse = (error: GraphQLFormattedError): { code
 		getErrorCodeByStatus(statusCode) || getErrorCodeByGraphQLCode(graphQLCode) || ErrorCode.INTERNAL_SERVER_ERROR;
 	const message = getMessage(ext, error.message) || Message.SOMETHING_WENT_WRONG;
 
-	// Never leak internal runtime details through public API.
-	if (code === ErrorCode.INTERNAL_SERVER_ERROR) {
+	// Never leak internal runtime details through public API in production.
+	if (code === ErrorCode.INTERNAL_SERVER_ERROR && process.env.NODE_ENV === 'production') {
 		return { code, message: Message.SOMETHING_WENT_WRONG };
 	}
 

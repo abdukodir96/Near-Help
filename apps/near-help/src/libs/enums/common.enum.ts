@@ -47,6 +47,7 @@ export const getErrorCodeByStatus = (status?: number): ErrorCode | undefined => 
 };
 
 const GRAPHQL_CODE_TO_ERROR_CODE: Record<string, ErrorCode> = {
+	BAD_REQUEST: ErrorCode.BAD_REQUEST,
 	BAD_USER_INPUT: ErrorCode.BAD_REQUEST,
 	GRAPHQL_PARSE_FAILED: ErrorCode.BAD_REQUEST,
 	GRAPHQL_VALIDATION_FAILED: ErrorCode.BAD_REQUEST,
