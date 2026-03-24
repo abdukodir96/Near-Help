@@ -156,7 +156,7 @@ export class ArticleService {
 		}
 	}
 
-	public async getBoardArticles(input: ArticlesInquiry): Promise<Articles> {
+	public async getArticles(input: ArticlesInquiry): Promise<Articles> {
 		const filter: Record<string, unknown> = {
 			articleStatus: ArticleStatus.ACTIVE,
 		};
@@ -191,7 +191,7 @@ export class ArticleService {
 		};
 	}
 
-	public async getAllBoardArticlesByAdmin(input: AllArticlesInquiry): Promise<Articles> {
+	public async getAllArticlesByAdmin(input: AllArticlesInquiry): Promise<Articles> {
 		const filter: Record<string, unknown> = {};
 
 		if (input.search.articleStatus) {

@@ -63,16 +63,16 @@ export class ArticleResolver {
 	}
 
 	@Query(() => Articles)
-	public async getBoardArticles(@Args('input') input: ArticlesInquiry): Promise<Articles> {
-		console.log('Query: getBoardArticles');
-		return this.articleService.getBoardArticles(input);
+	public async getArticles(@Args('input') input: ArticlesInquiry): Promise<Articles> {
+		console.log('Query: getArticles');
+		return this.articleService.getArticles(input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.ADMIN)
 	@Query(() => Articles)
-	public async getAllBoardArticlesByAdmin(@Args('input') input: AllArticlesInquiry): Promise<Articles> {
-		console.log('Query: getAllBoardArticlesByAdmin');
-		return this.articleService.getAllBoardArticlesByAdmin(input);
+	public async getAllArticlesByAdmin(@Args('input') input: AllArticlesInquiry): Promise<Articles> {
+		console.log('Query: getAllArticlesByAdmin');
+		return this.articleService.getAllArticlesByAdmin(input);
 	}
 }
