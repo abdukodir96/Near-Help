@@ -3,7 +3,7 @@ import { ServiceService } from './service.service';
 import { Service, ServicesResult } from '../../libs/dto/service/service';
 import {
 	CreateServiceInput,
-	GetAgentPropertiesInput,
+	GetAgentServicesInput,
 	GetServiceInput,
 	GetServicesInput,
 	UpdateServiceInput,
@@ -61,11 +61,11 @@ export class ServiceResolver {
 
 	@UseGuards(OptionalAuthGuard)
 	@Query(() => ServicesResult)
-	public async getAgentProperties(
+	public async getAgentServices(
 		@AuthMember() authMember: AuthMemberPayload | null,
-		@Args('input') input: GetAgentPropertiesInput,
+		@Args('input') input: GetAgentServicesInput,
 	): Promise<ServicesResult> {
-		console.log('Query: getAgentProperties');
-		return this.serviceService.getAgentProperties(authMember, input);
+		console.log('Query: getAgentServices');
+		return this.serviceService.getAgentServices(authMember, input);
 	}
 }

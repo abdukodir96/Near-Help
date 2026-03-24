@@ -184,7 +184,7 @@ export class UpdateServiceInput {
 }
 
 @InputType()
-export class GetAgentPropertiesInput {
+export class GetAgentServicesInput {
 	@IsNotEmpty()
 	@IsMongoId()
 	@Field(() => String)

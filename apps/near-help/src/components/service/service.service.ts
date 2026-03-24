@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
 	CreateServiceInput,
-	GetAgentPropertiesInput,
+	GetAgentServicesInput,
 	GetServiceInput,
 	GetServicesInput,
 	UpdateServiceInput,
@@ -180,9 +180,9 @@ export class ServiceService {
 		};
 	}
 
-	public async getAgentProperties(
+	public async getAgentServices(
 		authMember: AuthMemberPayload | null,
-		input: GetAgentPropertiesInput,
+		input: GetAgentServicesInput,
 	): Promise<ServicesResult> {
 		if (typeof input?.minPrice === 'number' && typeof input?.maxPrice === 'number' && input.minPrice > input.maxPrice) {
 			throw new BadRequestException(Message.BAD_REQUEST);
