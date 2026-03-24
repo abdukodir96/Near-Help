@@ -7,6 +7,8 @@ import { ArticleService } from './article.service';
 import { AuthModule } from '../auth/auth.module';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
+import { ViewModule } from '../view/view.module';
+import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 
 @Module({
 	imports: [
@@ -15,8 +17,9 @@ import { RolesGuard } from '../../libs/guards/roles.guard';
 			{ name: 'Member', schema: MemberSchema },
 		]),
 		AuthModule,
+		ViewModule,
 	],
-	providers: [ArticleResolver, ArticleService, AuthGuard, RolesGuard],
+	providers: [ArticleResolver, ArticleService, AuthGuard, RolesGuard, OptionalAuthGuard],
 	exports: [ArticleService],
 })
 export class ArticleModule {}

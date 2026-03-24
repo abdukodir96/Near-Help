@@ -29,6 +29,14 @@ export class ArticleInput {
 }
 
 @InputType()
+export class GetArticleInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	articleId!: string;
+}
+
+@InputType()
 class ArticlesSearchInput {
 	@IsOptional()
 	@IsEnum(ArticleCategory)
