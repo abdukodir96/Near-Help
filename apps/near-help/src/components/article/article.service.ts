@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Article, Articles } from '../../libs/dto/article/article';
 import {
 	ArticleInput,
+	AllArticlesInquiry,
 	ArticlesInquiry,
 	GetArticleInput,
 	UpdateArticleByAdminInput,
@@ -172,6 +173,33 @@ export class ArticleService {
 		if (searchText) {
 			const regex = new RegExp(searchText, 'i');
 			filter.$or = [{ articleTitle: regex }, { articleContent: regex }];
+		}
+
+		const sortField = input.sort ?? 'createdAt';
+		const sortDirection: 1 | -1 = input.direction === Direction.ASC ? 1 : -1;
+		const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+		const skip = (input.page - 1) * input.limit;
+
+		const [list, totalCount] = await Promise.all([
+			this.articleModel.find(filter).sort(sort).skip(skip).limit(input.limit).exec(),
+			this.articleModel.countDocuments(filter).exec(),
+		]);
+
+		return {
+			list: list as Article[],
+			metaCounter: [{ total: totalCount }],
+		};
+	}
+
+	public async getAllBoardArticlesByAdmin(input: AllArticlesInquiry): Promise<Articles> {
+		const filter: Record<string, unknown> = {};
+
+		if (input.search.articleStatus) {
+			filter.articleStatus = input.search.articleStatus;
+		}
+
+		if (input.search.articleCategory) {
+			filter.articleCategory = input.search.articleCategory;
 		}
 
 		const sortField = input.sort ?? 'createdAt';

@@ -4,6 +4,7 @@ import { ArticleService } from './article.service';
 import { Article, Articles } from '../../libs/dto/article/article';
 import {
 	ArticleInput,
+	AllArticlesInquiry,
 	ArticlesInquiry,
 	GetArticleInput,
 	UpdateArticleByAdminInput,
@@ -65,5 +66,13 @@ export class ArticleResolver {
 	public async getBoardArticles(@Args('input') input: ArticlesInquiry): Promise<Articles> {
 		console.log('Query: getBoardArticles');
 		return this.articleService.getBoardArticles(input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Query(() => Articles)
+	public async getAllBoardArticlesByAdmin(@Args('input') input: AllArticlesInquiry): Promise<Articles> {
+		console.log('Query: getAllBoardArticlesByAdmin');
+		return this.articleService.getAllBoardArticlesByAdmin(input);
 	}
 }
