@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
 	CreateServiceInput,
+	GetAgentPropertiesInput,
 	GetServiceInput,
 	GetServicesInput,
 	UpdateServiceInput,
@@ -124,6 +125,84 @@ export class ServiceService {
 
 		const filter: Record<string, unknown> = {
 			serviceStatus: ServiceStatus.ACTIVE,
+		};
+
+		const searchText = input?.searchText?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [{ serviceTitle: regex }, { serviceDesc: regex }, { serviceAddress: regex }];
+		}
+
+		if (input?.serviceCategory) {
+			filter.serviceCategory = input.serviceCategory;
+		}
+		if (input?.serviceOption) {
+			filter.serviceOption = input.serviceOption;
+		}
+		if (input?.serviceArea) {
+			filter.serviceArea = input.serviceArea;
+		}
+
+		if (typeof input?.minPrice === 'number' || typeof input?.maxPrice === 'number') {
+			filter.servicePrice = {};
+			if (typeof input?.minPrice === 'number') {
+				(filter.servicePrice as { $gte?: number }).$gte = input.minPrice;
+			}
+			if (typeof input?.maxPrice === 'number') {
+				(filter.servicePrice as { $lte?: number }).$lte = input.maxPrice;
+			}
+		}
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+		const sort = this.getServiceSort(input?.sortBy);
+		const totalCount = await this.serviceModel.countDocuments(filter).exec();
+
+		const services = await this.serviceModel
+			.find(filter)
+			.sort(sort)
+			.skip((page - 1) * limit)
+			.limit(limit)
+			.exec();
+
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: services as Service[],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
+		};
+	}
+
+	public async getAgentProperties(
+		authMember: AuthMemberPayload | null,
+		input: GetAgentPropertiesInput,
+	): Promise<ServicesResult> {
+		if (typeof input?.minPrice === 'number' && typeof input?.maxPrice === 'number' && input.minPrice > input.maxPrice) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const agent = await this.memberModel.findById(input.agentId).select({ memberType: 1, memberStatus: 1 }).exec();
+		if (!agent || agent.memberStatus === MemberStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		if (agent.memberType !== MemberType.AGENT) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const isOwner = authMember?._id === input.agentId;
+		const isAdmin = authMember?.memberType === MemberType.ADMIN;
+
+		const filter: Record<string, unknown> = {
+			memberId: input.agentId,
+			serviceStatus: isOwner || isAdmin ? { $ne: ServiceStatus.DELETED } : ServiceStatus.ACTIVE,
 		};
 
 		const searchText = input?.searchText?.trim();

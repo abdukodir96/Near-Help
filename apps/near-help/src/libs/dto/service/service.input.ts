@@ -182,3 +182,61 @@ export class UpdateServiceInput {
 	@Field(() => String, { nullable: true })
 	serviceDesc?: string;
 }
+
+@InputType()
+export class GetAgentPropertiesInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	agentId!: string;
+
+	@IsOptional()
+	@Length(1, 80)
+	@Field(() => String, { nullable: true })
+	searchText?: string;
+
+	@IsOptional()
+	@IsEnum(ServiceCategory)
+	@Field(() => ServiceCategory, { nullable: true })
+	serviceCategory?: ServiceCategory;
+
+	@IsOptional()
+	@IsEnum(ServiceOption)
+	@Field(() => ServiceOption, { nullable: true })
+	serviceOption?: ServiceOption;
+
+	@IsOptional()
+	@IsEnum(ServiceLocation)
+	@Field(() => ServiceLocation, { nullable: true })
+	serviceArea?: ServiceLocation;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	minPrice?: number;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	maxPrice?: number;
+
+	@IsOptional()
+	@IsEnum(ServiceSort)
+	@Field(() => ServiceSort, { nullable: true })
+	sortBy?: ServiceSort;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
+}
