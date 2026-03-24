@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum Message {
 	SOMETHING_WENT_WRONG = 'Something went wrong!',
 	NO_DATA_FOUND = 'No data found!',
@@ -63,3 +65,9 @@ export const getErrorCodeByGraphQLCode = (code?: string): ErrorCode | undefined 
 	if (!code) return undefined;
 	return GRAPHQL_CODE_TO_ERROR_CODE[code];
 };
+
+export enum Direction {
+	ASC = 'ASC',
+	DESC = 'DESC',
+}
+registerEnumType(Direction, { name: 'Direction' });
