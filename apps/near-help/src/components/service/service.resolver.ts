@@ -7,6 +7,7 @@ import {
 	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
+	UpdateServiceByAdminInput,
 	UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
 import { UseGuards } from '@nestjs/common';
@@ -78,5 +79,13 @@ export class ServiceResolver {
 	): Promise<ServicesResult> {
 		console.log('Query: getAllServicesByAdmin');
 		return this.serviceService.getAllServicesByAdmin(input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Mutation(() => Service)
+	public async updateServiceByAdmin(@Args('input') input: UpdateServiceByAdminInput): Promise<Service> {
+		console.log('Mutation: updateServiceByAdmin');
+		return this.serviceService.updateServiceByAdmin(input);
 	}
 }

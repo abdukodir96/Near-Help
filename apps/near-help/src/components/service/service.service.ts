@@ -7,6 +7,7 @@ import {
 	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
+	UpdateServiceByAdminInput,
 	UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
 import { Service, ServicesResult } from '../../libs/dto/service/service';
@@ -323,6 +324,54 @@ export class ServiceService {
 				hasPrevPage: page > 1 && totalPages > 0,
 			},
 		};
+	}
+
+	public async updateServiceByAdmin(input: UpdateServiceByAdminInput): Promise<Service> {
+		const { targetServiceId, ...rest } = input;
+		const payload = Object.fromEntries(
+			Object.entries(rest).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+
+		if (!targetServiceId || Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const existingService = await this.serviceModel.findById(targetServiceId).exec();
+		if (!existingService) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const updateQuery: {
+			$set: Record<string, unknown>;
+			$unset?: Record<string, 1>;
+		} = {
+			$set: payload,
+		};
+
+		if ('serviceStatus' in payload) {
+			if (payload.serviceStatus === ServiceStatus.DELETED) {
+				updateQuery.$set.deletedAt = new Date();
+			} else {
+				updateQuery.$unset = { deletedAt: 1 };
+			}
+		}
+
+		let updatedService: Service | null = null;
+		try {
+			updatedService = await this.serviceModel
+				.findByIdAndUpdate(targetServiceId, updateQuery, { new: true, runValidators: true })
+				.exec();
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Service.updateServiceByAdmin:', errMessage);
+			throw new BadRequestException(Message.UPDATE_FAILED);
+		}
+
+		if (!updatedService) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		return updatedService;
 	}
 
 	private getServiceSort(sortBy?: ServiceSort): Record<string, 1 | -1> {
