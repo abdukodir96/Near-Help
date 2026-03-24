@@ -18,6 +18,8 @@ export const uploadConfig = {
 	maxImageFiles: parsePositiveInt(process.env.UPLOAD_MAX_IMAGE_FILES, 10),
 };
 
+export const availableCommentSorts = ['createdAt', 'updatedAt'] as const;
+
 export const getAccessTokenSecret = (): string => {
 	const secret = process.env.JWT_ACCESS_SECRET;
 	if (secret) return secret;
