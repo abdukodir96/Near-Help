@@ -126,3 +126,38 @@ export class AllArticlesInquiry {
 	@Field(() => AllArticlesSearchInput)
 	search!: AllArticlesSearchInput;
 }
+
+@InputType()
+export class UpdateArticleByAdminInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetArticleId!: string;
+
+	@IsOptional()
+	@IsEnum(ArticleCategory)
+	@Field(() => ArticleCategory, { nullable: true })
+	articleCategory?: ArticleCategory;
+
+	@IsOptional()
+	@IsEnum(ArticleStatus)
+	@Field(() => ArticleStatus, { nullable: true })
+	articleStatus?: ArticleStatus;
+
+	@IsOptional()
+	@IsString()
+	@Length(3, 80)
+	@Field(() => String, { nullable: true })
+	articleTitle?: string;
+
+	@IsOptional()
+	@IsString()
+	@Length(3, 2500)
+	@Field(() => String, { nullable: true })
+	articleContent?: string;
+
+	@IsOptional()
+	@IsString()
+	@Field(() => String, { nullable: true })
+	articleImage?: string;
+}

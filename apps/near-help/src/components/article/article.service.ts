@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Article } from '../../libs/dto/article/article';
-import { ArticleInput, GetArticleInput } from '../../libs/dto/article/article.input';
+import { ArticleInput, GetArticleInput, UpdateArticleByAdminInput } from '../../libs/dto/article/article.input';
 import { Member } from '../../libs/dto/member/member';
 import { Message } from '../../libs/enums/common.enum';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
@@ -10,6 +10,7 @@ import { AuthMemberPayload } from '../../libs/types/auth';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { ArticleStatus } from '../../libs/enums/article.enum';
+import { ArticleUpdate } from '../../libs/dto/article/article.update';
 
 @Injectable()
 export class ArticleService {
@@ -72,5 +73,80 @@ export class ArticleService {
 		}
 
 		return article as Article;
+	}
+
+	public async updateArticle(authMember: AuthMemberPayload, input: ArticleUpdate): Promise<Article> {
+		const { _id: targetArticleId, ...rest } = input;
+		const payload = Object.fromEntries(
+			Object.entries(rest).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+
+		if (!targetArticleId || Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const article = await this.articleModel.findById(targetArticleId).exec();
+		if (!article || article.articleStatus === ArticleStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const isOwner = String(article.memberId) === authMember._id;
+		const isAdmin = authMember.memberType === MemberType.ADMIN;
+
+		if (!isOwner && !isAdmin) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		if (!isAdmin && Object.prototype.hasOwnProperty.call(payload, 'articleStatus')) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		try {
+			const updatedArticle = await this.articleModel
+				.findByIdAndUpdate(targetArticleId, { $set: payload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedArticle) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedArticle as Article;
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Article.updateArticle:', errMessage);
+			throw new BadRequestException(Message.UPDATE_FAILED);
+		}
+	}
+
+	public async updateArticleByAdmin(input: UpdateArticleByAdminInput): Promise<Article> {
+		const { targetArticleId, ...rest } = input;
+		const payload = Object.fromEntries(
+			Object.entries(rest).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+
+		if (!targetArticleId || Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const existingArticle = await this.articleModel.findById(targetArticleId).exec();
+		if (!existingArticle) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		try {
+			const updatedArticle = await this.articleModel
+				.findByIdAndUpdate(targetArticleId, { $set: payload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedArticle) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedArticle as Article;
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Article.updateArticleByAdmin:', errMessage);
+			throw new BadRequestException(Message.UPDATE_FAILED);
+		}
 	}
 }
