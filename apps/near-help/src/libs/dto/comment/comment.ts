@@ -34,7 +34,7 @@ export class Comment {
 }
 
 @ObjectType()
-export class TotalCounter {
+export class CommentTotalCounter {
 	@Field(() => Int)
 	total!: number;
 }
@@ -44,6 +44,6 @@ export class Comments {
 	@Field(() => [Comment])
 	list!: Comment[];
 
-	@Field(() => [TotalCounter], { nullable: true })
-	metaCounter?: TotalCounter[];
+	@Field(() => [CommentTotalCounter], { nullable: true })
+	metaCounter?: CommentTotalCounter[];
 }
