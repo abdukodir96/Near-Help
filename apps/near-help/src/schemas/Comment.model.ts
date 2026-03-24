@@ -47,6 +47,11 @@ const CommentSchema = new Schema(
 			min: 0,
 		},
 
+		commentLikes: {
+			type: Number,
+			default: 0,
+		},
+
 		deletedAt: {
 			type: Date,
 		},

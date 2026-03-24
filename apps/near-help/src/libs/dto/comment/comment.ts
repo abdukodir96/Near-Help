@@ -32,6 +32,9 @@ export class Comment {
 	@Field(() => Int, { nullable: true })
 	repliesCount?: number;
 
+	@Field(() => Int, { nullable: true })
+	commentLikes?: number;
+
 	@Field(() => Date)
 	createdAt!: Date;
 
