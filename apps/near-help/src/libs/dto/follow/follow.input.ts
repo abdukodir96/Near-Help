@@ -33,3 +33,19 @@ export class FollowInquiry {
 	@Field(() => FollowSearch)
 	search!: FollowSearch;
 }
+
+@InputType()
+export class ToggleFollowInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetMemberId!: string;
+}
+
+@InputType()
+export class GetMeFollowedInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetMemberId!: string;
+}
