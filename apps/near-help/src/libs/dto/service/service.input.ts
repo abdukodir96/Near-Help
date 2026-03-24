@@ -3,6 +3,7 @@ import {
 	ArrayMaxSize,
 	IsArray,
 	IsEnum,
+	IsMongoId,
 	IsNotEmpty,
 	IsNumber,
 	IsOptional,
@@ -62,4 +63,12 @@ export class CreateServiceInput {
 	@Length(3, 1200)
 	@Field(() => String, { nullable: true })
 	serviceDesc?: string;
+}
+
+@InputType()
+export class GetServiceInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	serviceId!: string;
 }

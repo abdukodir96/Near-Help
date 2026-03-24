@@ -1,13 +1,15 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ServiceService } from './service.service';
 import { Service } from '../../libs/dto/service/service';
-import { CreateServiceInput } from '../../libs/dto/service/service.input';
+import { CreateServiceInput, GetServiceInput } from '../../libs/dto/service/service.input';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
+import { WithoutGuard } from '../../libs/guards/without.guard';
+import { AuthMemberPayload } from '../../libs/types/auth';
 
 @Resolver()
 export class ServiceResolver {
@@ -22,5 +24,15 @@ export class ServiceResolver {
 	): Promise<Service> {
 		console.log('Mutation: createService');
 		return this.serviceService.createService(memberId, input);
+	}
+
+	@UseGuards(WithoutGuard)
+	@Query(() => Service)
+	public async getService(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: GetServiceInput,
+	): Promise<Service> {
+		console.log('Query: getService');
+		return this.serviceService.getService(authMember, input);
 	}
 }
