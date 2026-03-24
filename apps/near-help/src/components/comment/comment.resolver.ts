@@ -2,7 +2,12 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
-import { CommentInput, CommentsInquiry } from '../../libs/dto/comment/comment.input';
+import {
+	CommentInput,
+	CommentsInquiry,
+	CreateReplyInput,
+	GetCommentThreadInput,
+} from '../../libs/dto/comment/comment.input';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
@@ -29,6 +34,17 @@ export class CommentResolver {
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
 	@Mutation(() => Comment)
+	public async createReply(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: CreateReplyInput,
+	): Promise<Comment> {
+		console.log('Mutation: createReply');
+		return this.commentService.createReply(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => Comment)
 	public async updateComment(
 		@AuthMember() authMember: AuthMemberPayload,
 		@Args('input') input: CommentUpdate,
@@ -41,5 +57,11 @@ export class CommentResolver {
 	public async getComments(@Args('input') input: CommentsInquiry): Promise<Comments> {
 		console.log('Query: getComments');
 		return this.commentService.getComments(input);
+	}
+
+	@Query(() => Comments)
+	public async getCommentThread(@Args('input') input: GetCommentThreadInput): Promise<Comments> {
+		console.log('Query: getCommentThread');
+		return this.commentService.getCommentThread(input);
 	}
 }

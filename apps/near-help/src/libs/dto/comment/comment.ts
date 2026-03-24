@@ -23,6 +23,15 @@ export class Comment {
 	@Field(() => String)
 	memberId!: string;
 
+	@Field(() => String, { nullable: true })
+	parentCommentId?: string;
+
+	@Field(() => Int, { nullable: true })
+	depth?: number;
+
+	@Field(() => Int, { nullable: true })
+	repliesCount?: number;
+
 	@Field(() => Date)
 	createdAt!: Date;
 

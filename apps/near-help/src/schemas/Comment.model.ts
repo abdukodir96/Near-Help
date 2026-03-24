@@ -29,8 +29,28 @@ const CommentSchema = new Schema(
 			type: Schema.Types.ObjectId,
 			required: true,
 		},
+
+		parentCommentId: {
+			type: Schema.Types.ObjectId,
+			default: null,
+		},
+
+		depth: {
+			type: Number,
+			default: 0,
+			min: 0,
+		},
+
+		repliesCount: {
+			type: Number,
+			default: 0,
+			min: 0,
+		},
 	},
 	{ timestamps: true, collection: 'comments' },
 );
+
+CommentSchema.index({ commentRefId: 1, parentCommentId: 1, createdAt: -1 });
+CommentSchema.index({ parentCommentId: 1, createdAt: 1 });
 
 export default CommentSchema;

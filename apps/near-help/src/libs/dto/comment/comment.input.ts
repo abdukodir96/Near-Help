@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsMongoId, IsNotEmpty, IsOptional, IsString, Length, Min } from 'class-validator';
+import { IsIn, IsInt, IsMongoId, IsNotEmpty, IsOptional, IsString, Length, Max, Min } from 'class-validator';
 import { CommentGroup } from '../../enums/comment.enum';
 import { Direction } from '../../enums/common.enum';
 import { availableCommentSorts } from '../../config';
@@ -20,6 +20,20 @@ export class CommentInput {
 	@IsMongoId()
 	@Field(() => String)
 	commentRefId!: string;
+}
+
+@InputType()
+export class CreateReplyInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	parentCommentId!: string;
+
+	@IsNotEmpty()
+	@IsString()
+	@Length(1, 100)
+	@Field(() => String)
+	commentContent!: string;
 }
 
 @InputType()
@@ -54,4 +68,34 @@ export class CommentsInquiry {
 	@IsNotEmpty()
 	@Field(() => CommentsInquirySearch)
 	search!: CommentsInquirySearch;
+}
+
+@InputType()
+export class GetCommentThreadInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	rootCommentId!: string;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
+
+	@IsOptional()
+	@IsIn([...availableCommentSorts, 'depth'])
+	@Field(() => String, { nullable: true })
+	sort?: string;
+
+	@IsOptional()
+	@Field(() => Direction, { nullable: true })
+	direction?: Direction;
 }
