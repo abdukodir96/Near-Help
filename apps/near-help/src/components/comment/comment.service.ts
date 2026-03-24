@@ -7,6 +7,8 @@ import {
 	CommentsInquiry,
 	CreateReplyInput,
 	GetCommentThreadInput,
+	RemoveCommentByAdminInput,
+	RemoveCommentInput,
 } from '../../libs/dto/comment/comment.input';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
 import { Member } from '../../libs/dto/member/member';
@@ -148,6 +150,30 @@ export class CommentService {
 			console.log('Error, Comment.updateComment:', errMessage);
 			throw new BadRequestException(Message.UPDATE_FAILED);
 		}
+	}
+
+	public async removeComment(authMember: AuthMemberPayload, input: RemoveCommentInput): Promise<Comment> {
+		const comment = await this.commentModel.findById(input._id).exec();
+		if (!comment) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const isOwner = String(comment.memberId) === authMember._id;
+		const isAdmin = authMember.memberType === MemberType.ADMIN;
+		if (!isOwner && !isAdmin) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		return this.softDeleteComment(comment);
+	}
+
+	public async removeCommentByAdmin(input: RemoveCommentByAdminInput): Promise<Comment> {
+		const comment = await this.commentModel.findById(input.targetCommentId).exec();
+		if (!comment) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		return this.softDeleteComment(comment);
 	}
 
 	public async getComments(input: CommentsInquiry): Promise<Comments> {
@@ -311,5 +337,65 @@ export class CommentService {
 			default:
 				return;
 		}
+	}
+
+	private async decrementTargetComments(commentGroup: CommentGroup, commentRefId: string): Promise<void> {
+		switch (commentGroup) {
+			case CommentGroup.MEMBER:
+				await this.memberModel.updateOne({ _id: commentRefId }, { $inc: { memberComments: -1 } }).exec();
+				return;
+			case CommentGroup.ARTICLE:
+				await this.articleModel.updateOne({ _id: commentRefId }, { $inc: { articleComments: -1 } }).exec();
+				return;
+			case CommentGroup.SERVICE:
+				await this.serviceModel.updateOne({ _id: commentRefId }, { $inc: { serviceComments: -1 } }).exec();
+				return;
+			default:
+				return;
+		}
+	}
+
+	private async softDeleteComment(comment: Comment): Promise<Comment> {
+		if (comment.commentStatus === CommentStatus.DELETED) {
+			return comment;
+		}
+
+		let updatedComment: Comment | null = null;
+		try {
+			updatedComment = await this.commentModel
+				.findByIdAndUpdate(
+					comment._id,
+					{
+						$set: {
+							commentStatus: CommentStatus.DELETED,
+							deletedAt: new Date(),
+						},
+					},
+					{ new: true, runValidators: true },
+				)
+				.exec();
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Comment.softDeleteComment:', errMessage);
+			throw new BadRequestException(Message.REMOVE_FAILED);
+		}
+
+		if (!updatedComment) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const postDeleteOperations = [
+			this.memberModel.updateOne({ _id: comment.memberId }, { $inc: { memberComments: -1 } }).exec(),
+			this.decrementTargetComments(comment.commentGroup, String(comment.commentRefId)),
+		];
+
+		if (comment.parentCommentId) {
+			postDeleteOperations.push(
+				this.commentModel.updateOne({ _id: comment.parentCommentId }, { $inc: { repliesCount: -1 } }).exec(),
+			);
+		}
+
+		await Promise.all(postDeleteOperations);
+		return updatedComment;
 	}
 }

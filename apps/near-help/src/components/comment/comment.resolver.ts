@@ -7,6 +7,8 @@ import {
 	CommentsInquiry,
 	CreateReplyInput,
 	GetCommentThreadInput,
+	RemoveCommentByAdminInput,
+	RemoveCommentInput,
 } from '../../libs/dto/comment/comment.input';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
 import { AuthGuard } from '../../libs/guards/auth.guard';
@@ -51,6 +53,25 @@ export class CommentResolver {
 	): Promise<Comment> {
 		console.log('Mutation: updateComment');
 		return this.commentService.updateComment(authMember, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => Comment)
+	public async removeComment(
+		@AuthMember() authMember: AuthMemberPayload,
+		@Args('input') input: RemoveCommentInput,
+	): Promise<Comment> {
+		console.log('Mutation: removeComment');
+		return this.commentService.removeComment(authMember, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Mutation(() => Comment)
+	public async removeCommentByAdmin(@Args('input') input: RemoveCommentByAdminInput): Promise<Comment> {
+		console.log('Mutation: removeCommentByAdmin');
+		return this.commentService.removeCommentByAdmin(input);
 	}
 
 	@Query(() => Comments)

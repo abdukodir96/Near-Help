@@ -99,3 +99,19 @@ export class GetCommentThreadInput {
 	@Field(() => Direction, { nullable: true })
 	direction?: Direction;
 }
+
+@InputType()
+export class RemoveCommentInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	_id!: string;
+}
+
+@InputType()
+export class RemoveCommentByAdminInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetCommentId!: string;
+}
