@@ -34,3 +34,13 @@ export enum ServiceLocation {
 registerEnumType(ServiceLocation, {
 	name: 'ServiceLocation',
 });
+
+export enum ServiceSort {
+	RECENT = 'RECENT',
+	OLDER = 'OLDER',
+	LOWEST_PRICE = 'LOWEST_PRICE',
+	HIGHEST_PRICE = 'HIGHEST_PRICE',
+	LIKES = 'LIKES',
+	VIEWS = 'VIEWS',
+}
+registerEnumType(ServiceSort, { name: 'ServiceSort' });

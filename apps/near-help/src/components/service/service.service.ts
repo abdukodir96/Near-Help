@@ -1,12 +1,17 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateServiceInput, GetServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
-import { Service } from '../../libs/dto/service/service';
+import {
+	CreateServiceInput,
+	GetServiceInput,
+	GetServicesInput,
+	UpdateServiceInput,
+} from '../../libs/dto/service/service.input';
+import { Service, ServicesResult } from '../../libs/dto/service/service';
 import { Member } from '../../libs/dto/member/member';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { Message } from '../../libs/enums/common.enum';
-import { ServiceStatus } from '../../libs/enums/service.enum';
+import { ServiceSort, ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
@@ -110,5 +115,85 @@ export class ServiceService {
 		}
 
 		return service as Service;
+	}
+
+	public async getServices(input?: GetServicesInput): Promise<ServicesResult> {
+		if (typeof input?.minPrice === 'number' && typeof input?.maxPrice === 'number' && input.minPrice > input.maxPrice) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const filter: Record<string, unknown> = {
+			serviceStatus: ServiceStatus.ACTIVE,
+		};
+
+		const searchText = input?.searchText?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [{ serviceTitle: regex }, { serviceDesc: regex }, { serviceAddress: regex }];
+		}
+
+		if (input?.serviceCategory) {
+			filter.serviceCategory = input.serviceCategory;
+		}
+		if (input?.serviceOption) {
+			filter.serviceOption = input.serviceOption;
+		}
+		if (input?.serviceArea) {
+			filter.serviceArea = input.serviceArea;
+		}
+
+		if (typeof input?.minPrice === 'number' || typeof input?.maxPrice === 'number') {
+			filter.servicePrice = {};
+			if (typeof input?.minPrice === 'number') {
+				(filter.servicePrice as { $gte?: number }).$gte = input.minPrice;
+			}
+			if (typeof input?.maxPrice === 'number') {
+				(filter.servicePrice as { $lte?: number }).$lte = input.maxPrice;
+			}
+		}
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+		const sort = this.getServiceSort(input?.sortBy);
+		const totalCount = await this.serviceModel.countDocuments(filter).exec();
+
+		const services = await this.serviceModel
+			.find(filter)
+			.sort(sort)
+			.skip((page - 1) * limit)
+			.limit(limit)
+			.exec();
+
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: services as Service[],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
+		};
+	}
+
+	private getServiceSort(sortBy?: ServiceSort): Record<string, 1 | -1> {
+		switch (sortBy) {
+			case ServiceSort.OLDER:
+				return { createdAt: 1 };
+			case ServiceSort.LOWEST_PRICE:
+				return { servicePrice: 1, createdAt: -1 };
+			case ServiceSort.HIGHEST_PRICE:
+				return { servicePrice: -1, createdAt: -1 };
+			case ServiceSort.LIKES:
+				return { serviceLikes: -1, createdAt: -1 };
+			case ServiceSort.VIEWS:
+				return { serviceViews: -1, createdAt: -1 };
+			case ServiceSort.RECENT:
+			default:
+				return { createdAt: -1 };
+		}
 	}
 }

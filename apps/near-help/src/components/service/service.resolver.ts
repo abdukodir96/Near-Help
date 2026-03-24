@@ -1,7 +1,12 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ServiceService } from './service.service';
-import { Service } from '../../libs/dto/service/service';
-import { CreateServiceInput, GetServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
+import { Service, ServicesResult } from '../../libs/dto/service/service';
+import {
+	CreateServiceInput,
+	GetServiceInput,
+	GetServicesInput,
+	UpdateServiceInput,
+} from '../../libs/dto/service/service.input';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
@@ -45,5 +50,11 @@ export class ServiceResolver {
 	): Promise<Service> {
 		console.log('Query: getService');
 		return this.serviceService.getService(authMember, input);
+	}
+
+	@Query(() => ServicesResult)
+	public async getServices(@Args('input', { nullable: true }) input?: GetServicesInput): Promise<ServicesResult> {
+		console.log('Query: getServices');
+		return this.serviceService.getServices(input);
 	}
 }

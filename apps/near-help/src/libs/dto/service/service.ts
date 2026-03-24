@@ -62,3 +62,33 @@ export class Service {
 	@Field(() => Date)
 	updatedAt!: Date;
 }
+
+@ObjectType()
+export class ServicePaginationMeta {
+	@Field(() => Int)
+	totalCount!: number;
+
+	@Field(() => Int)
+	page!: number;
+
+	@Field(() => Int)
+	limit!: number;
+
+	@Field(() => Int)
+	totalPages!: number;
+
+	@Field(() => Boolean)
+	hasNextPage!: boolean;
+
+	@Field(() => Boolean)
+	hasPrevPage!: boolean;
+}
+
+@ObjectType()
+export class ServicesResult {
+	@Field(() => [Service])
+	list!: Service[];
+
+	@Field(() => ServicePaginationMeta)
+	meta!: ServicePaginationMeta;
+}
