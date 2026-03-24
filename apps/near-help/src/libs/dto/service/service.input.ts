@@ -15,7 +15,7 @@ import {
 	Min,
 } from 'class-validator';
 import { ServiceOption } from '../../enums/service-option.enum';
-import { ServiceCategory, ServiceLocation, ServiceSort } from '../../enums/service.enum';
+import { ServiceCategory, ServiceLocation, ServiceSort, ServiceStatus } from '../../enums/service.enum';
 
 @InputType()
 export class CreateServiceInput {
@@ -199,6 +199,69 @@ export class GetAgentServicesInput {
 	@IsEnum(ServiceCategory)
 	@Field(() => ServiceCategory, { nullable: true })
 	serviceCategory?: ServiceCategory;
+
+	@IsOptional()
+	@IsEnum(ServiceOption)
+	@Field(() => ServiceOption, { nullable: true })
+	serviceOption?: ServiceOption;
+
+	@IsOptional()
+	@IsEnum(ServiceLocation)
+	@Field(() => ServiceLocation, { nullable: true })
+	serviceArea?: ServiceLocation;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	minPrice?: number;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	maxPrice?: number;
+
+	@IsOptional()
+	@IsEnum(ServiceSort)
+	@Field(() => ServiceSort, { nullable: true })
+	sortBy?: ServiceSort;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
+}
+
+@InputType()
+export class GetAllServicesByAdminInput {
+	@IsOptional()
+	@Length(1, 80)
+	@Field(() => String, { nullable: true })
+	searchText?: string;
+
+	@IsOptional()
+	@IsMongoId()
+	@Field(() => String, { nullable: true })
+	memberId?: string;
+
+	@IsOptional()
+	@IsEnum(ServiceCategory)
+	@Field(() => ServiceCategory, { nullable: true })
+	serviceCategory?: ServiceCategory;
+
+	@IsOptional()
+	@IsEnum(ServiceStatus)
+	@Field(() => ServiceStatus, { nullable: true })
+	serviceStatus?: ServiceStatus;
 
 	@IsOptional()
 	@IsEnum(ServiceOption)

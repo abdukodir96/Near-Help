@@ -4,6 +4,7 @@ import { Service, ServicesResult } from '../../libs/dto/service/service';
 import {
 	CreateServiceInput,
 	GetAgentServicesInput,
+	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
 	UpdateServiceInput,
@@ -67,5 +68,15 @@ export class ServiceResolver {
 	): Promise<ServicesResult> {
 		console.log('Query: getAgentServices');
 		return this.serviceService.getAgentServices(authMember, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Query(() => ServicesResult)
+	public async getAllServicesByAdmin(
+		@Args('input', { nullable: true }) input?: GetAllServicesByAdminInput,
+	): Promise<ServicesResult> {
+		console.log('Query: getAllServicesByAdmin');
+		return this.serviceService.getAllServicesByAdmin(input);
 	}
 }

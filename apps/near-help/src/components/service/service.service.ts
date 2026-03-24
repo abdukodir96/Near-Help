@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import {
 	CreateServiceInput,
 	GetAgentServicesInput,
+	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
 	UpdateServiceInput,
@@ -219,6 +220,72 @@ export class ServiceService {
 		}
 		if (input?.serviceArea) {
 			filter.serviceArea = input.serviceArea;
+		}
+
+		if (typeof input?.minPrice === 'number' || typeof input?.maxPrice === 'number') {
+			filter.servicePrice = {};
+			if (typeof input?.minPrice === 'number') {
+				(filter.servicePrice as { $gte?: number }).$gte = input.minPrice;
+			}
+			if (typeof input?.maxPrice === 'number') {
+				(filter.servicePrice as { $lte?: number }).$lte = input.maxPrice;
+			}
+		}
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+		const sort = this.getServiceSort(input?.sortBy);
+		const totalCount = await this.serviceModel.countDocuments(filter).exec();
+
+		const services = await this.serviceModel
+			.find(filter)
+			.sort(sort)
+			.skip((page - 1) * limit)
+			.limit(limit)
+			.exec();
+
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: services as Service[],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
+		};
+	}
+
+	public async getAllServicesByAdmin(input?: GetAllServicesByAdminInput): Promise<ServicesResult> {
+		if (typeof input?.minPrice === 'number' && typeof input?.maxPrice === 'number' && input.minPrice > input.maxPrice) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const filter: Record<string, unknown> = {};
+
+		if (input?.memberId) {
+			filter.memberId = input.memberId;
+		}
+		if (input?.serviceCategory) {
+			filter.serviceCategory = input.serviceCategory;
+		}
+		if (input?.serviceStatus) {
+			filter.serviceStatus = input.serviceStatus;
+		}
+		if (input?.serviceOption) {
+			filter.serviceOption = input.serviceOption;
+		}
+		if (input?.serviceArea) {
+			filter.serviceArea = input.serviceArea;
+		}
+
+		const searchText = input?.searchText?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [{ serviceTitle: regex }, { serviceDesc: regex }, { serviceAddress: regex }];
 		}
 
 		if (typeof input?.minPrice === 'number' || typeof input?.maxPrice === 'number') {
