@@ -365,7 +365,7 @@ export class UpdateServiceByAdminInput {
 }
 
 @InputType()
-export class RemovePropertyByAdminInput {
+export class RemoveServiceByAdminInput {
 	@IsNotEmpty()
 	@IsMongoId()
 	@Field(() => String)

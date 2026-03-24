@@ -7,7 +7,7 @@ import {
 	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
-	RemovePropertyByAdminInput,
+	RemoveServiceByAdminInput,
 	UpdateServiceByAdminInput,
 	UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
@@ -375,7 +375,7 @@ export class ServiceService {
 		return updatedService;
 	}
 
-	public async removePropertyByAdmin(input: RemovePropertyByAdminInput): Promise<Service> {
+	public async removeServiceByAdmin(input: RemoveServiceByAdminInput): Promise<Service> {
 		const { targetServiceId } = input;
 
 		const existingService = await this.serviceModel.findById(targetServiceId).exec();
@@ -403,7 +403,7 @@ export class ServiceService {
 				.exec();
 		} catch (err: unknown) {
 			const errMessage = err instanceof Error ? err.message : String(err);
-			console.log('Error, Service.removePropertyByAdmin:', errMessage);
+			console.log('Error, Service.removeServiceByAdmin:', errMessage);
 			throw new BadRequestException(Message.REMOVE_FAILED);
 		}
 

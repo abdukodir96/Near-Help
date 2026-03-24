@@ -7,7 +7,7 @@ import {
 	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
-	RemovePropertyByAdminInput,
+	RemoveServiceByAdminInput,
 	UpdateServiceByAdminInput,
 	UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
@@ -93,8 +93,8 @@ export class ServiceResolver {
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.ADMIN)
 	@Mutation(() => Service)
-	public async removePropertyByAdmin(@Args('input') input: RemovePropertyByAdminInput): Promise<Service> {
-		console.log('Mutation: removePropertyByAdmin');
-		return this.serviceService.removePropertyByAdmin(input);
+	public async removeServiceByAdmin(@Args('input') input: RemoveServiceByAdminInput): Promise<Service> {
+		console.log('Mutation: removeServiceByAdmin');
+		return this.serviceService.removeServiceByAdmin(input);
 	}
 }
