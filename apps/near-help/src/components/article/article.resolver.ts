@@ -1,8 +1,13 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { Article } from '../../libs/dto/article/article';
-import { ArticleInput, GetArticleInput, UpdateArticleByAdminInput } from '../../libs/dto/article/article.input';
+import { Article, Articles } from '../../libs/dto/article/article';
+import {
+	ArticleInput,
+	ArticlesInquiry,
+	GetArticleInput,
+	UpdateArticleByAdminInput,
+} from '../../libs/dto/article/article.input';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { Roles } from '../../libs/decorators/roles.decorators';
@@ -54,5 +59,11 @@ export class ArticleResolver {
 	): Promise<Article> {
 		console.log('Query: getArticle');
 		return this.articleService.getArticle(authMember, input);
+	}
+
+	@Query(() => Articles)
+	public async getBoardArticles(@Args('input') input: ArticlesInquiry): Promise<Articles> {
+		console.log('Query: getBoardArticles');
+		return this.articleService.getBoardArticles(input);
 	}
 }

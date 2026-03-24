@@ -1,10 +1,15 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Article } from '../../libs/dto/article/article';
-import { ArticleInput, GetArticleInput, UpdateArticleByAdminInput } from '../../libs/dto/article/article.input';
+import { Article, Articles } from '../../libs/dto/article/article';
+import {
+	ArticleInput,
+	ArticlesInquiry,
+	GetArticleInput,
+	UpdateArticleByAdminInput,
+} from '../../libs/dto/article/article.input';
 import { Member } from '../../libs/dto/member/member';
-import { Message } from '../../libs/enums/common.enum';
+import { Direction, Message } from '../../libs/enums/common.enum';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 import { ViewService } from '../view/view.service';
@@ -148,5 +153,40 @@ export class ArticleService {
 			console.log('Error, Article.updateArticleByAdmin:', errMessage);
 			throw new BadRequestException(Message.UPDATE_FAILED);
 		}
+	}
+
+	public async getBoardArticles(input: ArticlesInquiry): Promise<Articles> {
+		const filter: Record<string, unknown> = {
+			articleStatus: ArticleStatus.ACTIVE,
+		};
+
+		if (input.search.articleCategory) {
+			filter.articleCategory = input.search.articleCategory;
+		}
+
+		if (input.search.memberId) {
+			filter.memberId = input.search.memberId;
+		}
+
+		const searchText = input.search.text?.trim();
+		if (searchText) {
+			const regex = new RegExp(searchText, 'i');
+			filter.$or = [{ articleTitle: regex }, { articleContent: regex }];
+		}
+
+		const sortField = input.sort ?? 'createdAt';
+		const sortDirection: 1 | -1 = input.direction === Direction.ASC ? 1 : -1;
+		const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+		const skip = (input.page - 1) * input.limit;
+
+		const [list, totalCount] = await Promise.all([
+			this.articleModel.find(filter).sort(sort).skip(skip).limit(input.limit).exec(),
+			this.articleModel.countDocuments(filter).exec(),
+		]);
+
+		return {
+			list: list as Article[],
+			metaCounter: [{ total: totalCount }],
+		};
 	}
 }
