@@ -42,10 +42,4 @@ export class CommentResolver {
 		console.log('Query: getComments');
 		return this.commentService.getComments(input);
 	}
-
-	@Query(() => Comments)
-	public async getCommits(@Args('input') input: CommentsInquiry): Promise<Comments> {
-		console.log('Query: getCommits');
-		return this.commentService.getComments(input);
-	}
 }

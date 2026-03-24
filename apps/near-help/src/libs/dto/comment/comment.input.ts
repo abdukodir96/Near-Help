@@ -20,8 +20,6 @@ export class CommentInput {
 	@IsMongoId()
 	@Field(() => String)
 	commentRefId!: string;
-
-	memberId?: string;
 }
 
 @InputType()
