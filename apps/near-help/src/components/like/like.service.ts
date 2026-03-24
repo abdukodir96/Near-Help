@@ -2,7 +2,13 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Like, MeLiked } from '../../libs/dto/like/like';
-import { LikeInput } from '../../libs/dto/like/like.input';
+import {
+	LikeInput,
+	LikeTargetArticleInput,
+	LikeTargetCommentInput,
+	LikeTargetMemberInput,
+	LikeTargetServiceInput,
+} from '../../libs/dto/like/like.input';
 import { Message } from '../../libs/enums/common.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { ArticleStatus } from '../../libs/enums/article.enum';
@@ -24,7 +30,35 @@ export class LikeService {
 		@InjectModel('Comment') private readonly commentModel: Model<Comment>,
 	) {}
 
-	public async toggleLike(memberId: string, input: LikeInput): Promise<MeLiked> {
+	public async likeTargetMember(memberId: string, input: LikeTargetMemberInput): Promise<MeLiked> {
+		return this.toggleLikeInternal(memberId, {
+			likeGroup: LikeGroup.MEMBER,
+			likeRefId: input.targetMemberId,
+		});
+	}
+
+	public async likeTargetService(memberId: string, input: LikeTargetServiceInput): Promise<MeLiked> {
+		return this.toggleLikeInternal(memberId, {
+			likeGroup: LikeGroup.SERVICE,
+			likeRefId: input.targetServiceId,
+		});
+	}
+
+	public async likeTargetArticle(memberId: string, input: LikeTargetArticleInput): Promise<MeLiked> {
+		return this.toggleLikeInternal(memberId, {
+			likeGroup: LikeGroup.ARTICLE,
+			likeRefId: input.targetArticleId,
+		});
+	}
+
+	public async likeTargetComment(memberId: string, input: LikeTargetCommentInput): Promise<MeLiked> {
+		return this.toggleLikeInternal(memberId, {
+			likeGroup: LikeGroup.COMMENT,
+			likeRefId: input.targetCommentId,
+		});
+	}
+
+	private async toggleLikeInternal(memberId: string, input: LikeInput): Promise<MeLiked> {
 		await this.ensureActorCanLike(memberId);
 		await this.ensureLikeTargetExists(input.likeGroup, input.likeRefId);
 
@@ -65,7 +99,7 @@ export class LikeService {
 			}
 
 			const errMessage = err instanceof Error ? err.message : String(err);
-			console.log('Error, Like.toggleLike(create):', errMessage);
+			console.log('Error, Like.toggleLikeInternal(create):', errMessage);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
 

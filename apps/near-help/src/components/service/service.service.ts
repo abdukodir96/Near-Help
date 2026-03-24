@@ -19,12 +19,15 @@ import { ServiceSort, ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
+import { LikeGroup } from '../../libs/enums/like.enum';
+import { Like } from '../../libs/dto/like/like';
 
 @Injectable()
 export class ServiceService {
 	constructor(
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
+		@InjectModel('Like') private readonly likeModel: Model<Like>,
 		private readonly viewService: ViewService,
 	) {}
 
@@ -116,6 +119,20 @@ export class ServiceService {
 				await this.serviceModel.updateOne({ _id: input.serviceId }, { $inc: { serviceViews: 1 } }).exec();
 				service.serviceViews += 1;
 			}
+		}
+
+		service.meLiked = false;
+		if (authMember) {
+			const meLiked = await this.likeModel
+				.findOne({
+					memberId: authMember._id,
+					likeGroup: LikeGroup.SERVICE,
+					likeRefId: input.serviceId,
+				})
+				.select({ _id: 1 })
+				.lean()
+				.exec();
+			service.meLiked = Boolean(meLiked);
 		}
 
 		return service as Service;

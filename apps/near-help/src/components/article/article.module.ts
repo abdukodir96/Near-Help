@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import ArticleSchema from '../../schemas/Article.model';
 import MemberSchema from '../../schemas/Member.model';
+import LikeSchema from '../../schemas/Like.model';
 import { ArticleResolver } from './article.resolver';
 import { ArticleService } from './article.service';
 import { AuthModule } from '../auth/auth.module';
@@ -15,6 +16,7 @@ import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 		MongooseModule.forFeature([
 			{ name: 'Article', schema: ArticleSchema },
 			{ name: 'Member', schema: MemberSchema },
+			{ name: 'Like', schema: LikeSchema },
 		]),
 		AuthModule,
 		ViewModule,

@@ -17,3 +17,35 @@ export class LikeInput {
 	// populated from auth context in service/resolver layer
 	memberId?: string;
 }
+
+@InputType()
+export class LikeTargetMemberInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetMemberId!: string;
+}
+
+@InputType()
+export class LikeTargetServiceInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetServiceId!: string;
+}
+
+@InputType()
+export class LikeTargetArticleInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetArticleId!: string;
+}
+
+@InputType()
+export class LikeTargetCommentInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetCommentId!: string;
+}

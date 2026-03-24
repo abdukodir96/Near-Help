@@ -61,6 +61,9 @@ export class Service {
 
 	@Field(() => Date)
 	updatedAt!: Date;
+
+	@Field(() => Boolean, { nullable: true })
+	meLiked?: boolean;
 }
 
 @ObjectType()

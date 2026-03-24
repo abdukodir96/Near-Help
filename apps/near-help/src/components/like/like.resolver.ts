@@ -2,7 +2,13 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { LikeService } from './like.service';
 import { MeLiked } from '../../libs/dto/like/like';
-import { LikeInput } from '../../libs/dto/like/like.input';
+import {
+	LikeTargetArticleInput,
+	LikeTargetCommentInput,
+	LikeTargetMemberInput,
+	LikeTargetServiceInput,
+	LikeInput,
+} from '../../libs/dto/like/like.input';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { Roles } from '../../libs/decorators/roles.decorators';
@@ -16,9 +22,45 @@ export class LikeResolver {
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
 	@Mutation(() => MeLiked)
-	public async toggleLike(@AuthMember('_id') memberId: string, @Args('input') input: LikeInput): Promise<MeLiked> {
-		console.log('Mutation: toggleLike');
-		return this.likeService.toggleLike(memberId, input);
+	public async likeTargetMember(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: LikeTargetMemberInput,
+	): Promise<MeLiked> {
+		console.log('Mutation: likeTargetMember');
+		return this.likeService.likeTargetMember(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => MeLiked)
+	public async likeTargetService(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: LikeTargetServiceInput,
+	): Promise<MeLiked> {
+		console.log('Mutation: likeTargetService');
+		return this.likeService.likeTargetService(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => MeLiked)
+	public async likeTargetArticle(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: LikeTargetArticleInput,
+	): Promise<MeLiked> {
+		console.log('Mutation: likeTargetArticle');
+		return this.likeService.likeTargetArticle(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => MeLiked)
+	public async likeTargetComment(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: LikeTargetCommentInput,
+	): Promise<MeLiked> {
+		console.log('Mutation: likeTargetComment');
+		return this.likeService.likeTargetComment(memberId, input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

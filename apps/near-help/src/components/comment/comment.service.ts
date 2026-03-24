@@ -21,6 +21,8 @@ import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { ArticleStatus } from '../../libs/enums/article.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
+import { LikeGroup } from '../../libs/enums/like.enum';
+import { Like } from '../../libs/dto/like/like';
 
 type CommentsAggregateResult = {
 	list: Comment[];
@@ -34,6 +36,7 @@ export class CommentService {
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Article') private readonly articleModel: Model<Article>,
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
+		@InjectModel('Like') private readonly likeModel: Model<Like>,
 	) {}
 
 	public async createComment(memberId: string, input: CommentInput): Promise<Comment> {
@@ -177,7 +180,7 @@ export class CommentService {
 		return this.softDeleteComment(comment);
 	}
 
-	public async getComments(input: CommentsInquiry): Promise<Comments> {
+	public async getComments(authMember: AuthMemberPayload | null, input: CommentsInquiry): Promise<Comments> {
 		const match: Record<string, unknown> = {
 			commentStatus: CommentStatus.ACTIVE,
 			commentRefId: new Types.ObjectId(input.search.commentRefId),
@@ -214,8 +217,11 @@ export class CommentService {
 			])
 			.exec();
 
+		const list = data[0]?.list ?? [];
+		await this.attachMeLikedFlags(authMember, list);
+
 		return {
-			list: data[0]?.list ?? [],
+			list,
 			metaCounter: data[0]?.metaCounter ?? [],
 		};
 	}
@@ -458,5 +464,32 @@ export class CommentService {
 
 		await Promise.all(postDeleteOperations);
 		return updatedComment;
+	}
+
+	private async attachMeLikedFlags(authMember: AuthMemberPayload | null, comments: Comment[]): Promise<void> {
+		if (comments.length === 0) return;
+
+		if (!authMember) {
+			comments.forEach((comment) => {
+				comment.meLiked = false;
+			});
+			return;
+		}
+
+		const commentIds = comments.map((comment) => comment._id);
+		const likes = await this.likeModel
+			.find({
+				memberId: authMember._id,
+				likeGroup: LikeGroup.COMMENT,
+				likeRefId: { $in: commentIds },
+			})
+			.select({ likeRefId: 1 })
+			.lean()
+			.exec();
+
+		const likedCommentIdSet = new Set(likes.map((like) => String(like.likeRefId)));
+		comments.forEach((comment) => {
+			comment.meLiked = likedCommentIdSet.has(String(comment._id));
+		});
 	}
 }

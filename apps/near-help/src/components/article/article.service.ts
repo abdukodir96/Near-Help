@@ -18,12 +18,15 @@ import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { ArticleStatus } from '../../libs/enums/article.enum';
 import { ArticleUpdate } from '../../libs/dto/article/article.update';
+import { LikeGroup } from '../../libs/enums/like.enum';
+import { Like } from '../../libs/dto/like/like';
 
 @Injectable()
 export class ArticleService {
 	constructor(
 		@InjectModel('Article') private readonly articleModel: Model<Article>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
+		@InjectModel('Like') private readonly likeModel: Model<Like>,
 		private readonly viewService: ViewService,
 	) {}
 
@@ -77,6 +80,20 @@ export class ArticleService {
 				await this.articleModel.updateOne({ _id: input.articleId }, { $inc: { articleViews: 1 } }).exec();
 				article.articleViews += 1;
 			}
+		}
+
+		article.meLiked = false;
+		if (authMember) {
+			const meLiked = await this.likeModel
+				.findOne({
+					memberId: authMember._id,
+					likeGroup: LikeGroup.ARTICLE,
+					likeRefId: input.articleId,
+				})
+				.select({ _id: 1 })
+				.lean()
+				.exec();
+			article.meLiked = Boolean(meLiked);
 		}
 
 		return article as Article;

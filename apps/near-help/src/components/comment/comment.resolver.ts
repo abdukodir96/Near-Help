@@ -18,6 +18,7 @@ import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import type { AuthMemberPayload } from '../../libs/types/auth';
+import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 
 @Resolver()
 export class CommentResolver {
@@ -75,10 +76,14 @@ export class CommentResolver {
 		return this.commentService.removeCommentByAdmin(input);
 	}
 
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => Comments)
-	public async getComments(@Args('input') input: CommentsInquiry): Promise<Comments> {
+	public async getComments(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: CommentsInquiry,
+	): Promise<Comments> {
 		console.log('Query: getComments');
-		return this.commentService.getComments(input);
+		return this.commentService.getComments(authMember, input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

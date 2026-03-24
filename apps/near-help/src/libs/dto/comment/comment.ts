@@ -43,6 +43,9 @@ export class Comment {
 
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
+
+	@Field(() => Boolean, { nullable: true })
+	meLiked?: boolean;
 }
 
 @ObjectType()
