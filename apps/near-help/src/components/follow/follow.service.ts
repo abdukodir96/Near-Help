@@ -75,6 +75,78 @@ export class FollowService {
 		};
 	}
 
+	public async subscribe(followerId: string, input: ToggleFollowInput): Promise<MeFollowed> {
+		await this.ensureActorCanFollow(followerId);
+
+		const followingId = input.targetMemberId;
+		if (followerId === followingId) {
+			throw new BadRequestException(Message.SELF_SUBSCRIPTION_DENIED);
+		}
+
+		await this.ensureTargetCanBeFollowed(followingId);
+
+		const existingFollow = await this.followModel.findOne({ followingId, followerId }).select({ _id: 1 }).lean().exec();
+		if (existingFollow) {
+			return {
+				followingId,
+				followerId,
+				myFollowing: true,
+			};
+		}
+
+		try {
+			await this.followModel.create({ followingId, followerId });
+		} catch (err: unknown) {
+			if (this.isMongoDuplicateKeyError(err)) {
+				return {
+					followingId,
+					followerId,
+					myFollowing: true,
+				};
+			}
+
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Follow.subscribe(create):', errMessage);
+			throw new BadRequestException(Message.CREATE_FAILED);
+		}
+
+		await this.updateFollowCounters(followingId, followerId, 1);
+		return {
+			followingId,
+			followerId,
+			myFollowing: true,
+		};
+	}
+
+	public async unsubscribe(followerId: string, input: ToggleFollowInput): Promise<MeFollowed> {
+		await this.ensureActorCanFollow(followerId);
+
+		const followingId = input.targetMemberId;
+		if (followerId === followingId) {
+			throw new BadRequestException(Message.SELF_SUBSCRIPTION_DENIED);
+		}
+
+		const existingFollow = await this.followModel.findOne({ followingId, followerId }).select({ _id: 1 }).lean().exec();
+		if (!existingFollow) {
+			return {
+				followingId,
+				followerId,
+				myFollowing: false,
+			};
+		}
+
+		const deleteResult = await this.followModel.deleteOne({ _id: existingFollow._id }).exec();
+		if (deleteResult.deletedCount === 1) {
+			await this.updateFollowCounters(followingId, followerId, -1);
+		}
+
+		return {
+			followingId,
+			followerId,
+			myFollowing: false,
+		};
+	}
+
 	public async getMeFollowed(followerId: string, input: GetMeFollowedInput): Promise<MeFollowed> {
 		await this.ensureActorCanFollow(followerId);
 

@@ -18,6 +18,28 @@ export class FollowResolver {
 	@UseGuards(AuthGuard, RolesGuard)
 	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
 	@Mutation(() => MeFollowed)
+	public async subscribe(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: ToggleFollowInput,
+	): Promise<MeFollowed> {
+		console.log('Mutation: subscribe');
+		return this.followService.subscribe(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => MeFollowed)
+	public async unsubscribe(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: ToggleFollowInput,
+	): Promise<MeFollowed> {
+		console.log('Mutation: unsubscribe');
+		return this.followService.unsubscribe(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Mutation(() => MeFollowed)
 	public async toggleFollow(
 		@AuthMember('_id') memberId: string,
 		@Args('input') input: ToggleFollowInput,
@@ -35,6 +57,26 @@ export class FollowResolver {
 	): Promise<MeFollowed> {
 		console.log('Query: getMeFollowed');
 		return this.followService.getMeFollowed(memberId, input);
+	}
+
+	@UseGuards(OptionalAuthGuard)
+	@Query(() => Followers)
+	public async getMemberFollowers(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: FollowInquiry,
+	): Promise<Followers> {
+		console.log('Query: getMemberFollowers');
+		return this.followService.getFollowers(authMember, input);
+	}
+
+	@UseGuards(OptionalAuthGuard)
+	@Query(() => Followings)
+	public async getMemberFollowings(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: FollowInquiry,
+	): Promise<Followings> {
+		console.log('Query: getMemberFollowings');
+		return this.followService.getFollowings(authMember, input);
 	}
 
 	@UseGuards(OptionalAuthGuard)
