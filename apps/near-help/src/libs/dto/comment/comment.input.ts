@@ -1,6 +1,6 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsIn, IsInt, IsMongoId, IsNotEmpty, IsOptional, IsString, Length, Max, Min } from 'class-validator';
-import { CommentGroup } from '../../enums/comment.enum';
+import { CommentGroup, CommentStatus } from '../../enums/comment.enum';
 import { Direction } from '../../enums/common.enum';
 import { availableCommentSorts } from '../../config';
 
@@ -68,6 +68,60 @@ export class CommentsInquiry {
 	@IsNotEmpty()
 	@Field(() => CommentsInquirySearch)
 	search!: CommentsInquirySearch;
+}
+
+@InputType()
+class AllCommentsSearchInput {
+	@IsOptional()
+	@Field(() => CommentStatus, { nullable: true })
+	commentStatus?: CommentStatus;
+
+	@IsOptional()
+	@Field(() => CommentGroup, { nullable: true })
+	commentGroup?: CommentGroup;
+
+	@IsOptional()
+	@IsMongoId()
+	@Field(() => String, { nullable: true })
+	commentRefId?: string;
+
+	@IsOptional()
+	@IsMongoId()
+	@Field(() => String, { nullable: true })
+	memberId?: string;
+
+	@IsOptional()
+	@IsString()
+	@Length(1, 100)
+	@Field(() => String, { nullable: true })
+	text?: string;
+}
+
+@InputType()
+export class AllCommentsInquiry {
+	@IsNotEmpty()
+	@Min(1)
+	@Field(() => Int)
+	page!: number;
+
+	@IsNotEmpty()
+	@Min(1)
+	@Max(100)
+	@Field(() => Int)
+	limit!: number;
+
+	@IsOptional()
+	@IsIn([...availableCommentSorts, 'repliesCount'])
+	@Field(() => String, { nullable: true })
+	sort?: string;
+
+	@IsOptional()
+	@Field(() => Direction, { nullable: true })
+	direction?: Direction;
+
+	@IsNotEmpty()
+	@Field(() => AllCommentsSearchInput)
+	search!: AllCommentsSearchInput;
 }
 
 @InputType()

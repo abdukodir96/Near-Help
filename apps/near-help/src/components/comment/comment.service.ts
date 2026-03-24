@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
 import {
 	CommentInput,
+	AllCommentsInquiry,
 	CommentsInquiry,
 	CreateReplyInput,
 	GetCommentThreadInput,
@@ -191,6 +192,66 @@ export class CommentService {
 		const data = await this.commentModel
 			.aggregate<CommentsAggregateResult>([
 				{ $match: match },
+				{ $sort: sort },
+				{
+					$facet: {
+						list: [
+							{ $skip: skip },
+							{ $limit: input.limit },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'memberId',
+									foreignField: '_id',
+									as: 'memberData',
+								},
+							},
+							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+						],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
+			.exec();
+
+		return {
+			list: data[0]?.list ?? [],
+			metaCounter: data[0]?.metaCounter ?? [],
+		};
+	}
+
+	public async getAllCommentsByAdmin(input: AllCommentsInquiry): Promise<Comments> {
+		const filter: Record<string, unknown> = {};
+
+		if (input.search.commentStatus) {
+			filter.commentStatus = input.search.commentStatus;
+		}
+
+		if (input.search.commentGroup) {
+			filter.commentGroup = input.search.commentGroup;
+		}
+
+		if (input.search.commentRefId) {
+			filter.commentRefId = new Types.ObjectId(input.search.commentRefId);
+		}
+
+		if (input.search.memberId) {
+			filter.memberId = new Types.ObjectId(input.search.memberId);
+		}
+
+		const searchText = input.search.text?.trim();
+		if (searchText) {
+			filter.commentContent = { $regex: new RegExp(searchText, 'i') };
+		}
+
+		const sortField = input.sort ?? 'createdAt';
+		const sortDirection: 1 | -1 = input.direction === Direction.ASC ? 1 : -1;
+		const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
+		const skip = (input.page - 1) * input.limit;
+
+		const data = await this.commentModel
+			.aggregate<CommentsAggregateResult>([
+				{ $match: filter },
 				{ $sort: sort },
 				{
 					$facet: {

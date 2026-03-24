@@ -4,6 +4,7 @@ import { CommentService } from './comment.service';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
 import {
 	CommentInput,
+	AllCommentsInquiry,
 	CommentsInquiry,
 	CreateReplyInput,
 	GetCommentThreadInput,
@@ -78,6 +79,14 @@ export class CommentResolver {
 	public async getComments(@Args('input') input: CommentsInquiry): Promise<Comments> {
 		console.log('Query: getComments');
 		return this.commentService.getComments(input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Query(() => Comments)
+	public async getAllCommentsByAdmin(@Args('input') input: AllCommentsInquiry): Promise<Comments> {
+		console.log('Query: getAllCommentsByAdmin');
+		return this.commentService.getAllCommentsByAdmin(input);
 	}
 
 	@Query(() => Comments)
