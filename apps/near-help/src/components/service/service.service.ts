@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateServiceInput, GetServiceInput } from '../../libs/dto/service/service.input';
+import { CreateServiceInput, GetServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { Service } from '../../libs/dto/service/service';
 import { Member } from '../../libs/dto/member/member';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
@@ -40,6 +40,45 @@ export class ServiceService {
 			const errMessage = err instanceof Error ? err.message : String(err);
 			console.log('Error, Service.createService:', errMessage);
 			throw new BadRequestException(Message.CREATE_FAILED);
+		}
+	}
+
+	public async updateService(authMember: AuthMemberPayload, input: UpdateServiceInput): Promise<Service> {
+		const { targetServiceId, ...rest } = input;
+		const payload = Object.fromEntries(
+			Object.entries(rest).filter(([, value]) => typeof value !== 'undefined' && value !== null),
+		);
+
+		if (!targetServiceId || Object.keys(payload).length === 0) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const service = await this.serviceModel.findById(targetServiceId).exec();
+		if (!service || service.serviceStatus === ServiceStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const isOwner = String(service.memberId) === authMember._id;
+		const isAdmin = authMember.memberType === MemberType.ADMIN;
+
+		if (!isOwner && !isAdmin) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		try {
+			const updatedService = await this.serviceModel
+				.findByIdAndUpdate(targetServiceId, { $set: payload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedService) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedService as Service;
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Service.updateService:', errMessage);
+			throw new BadRequestException(Message.UPDATE_FAILED);
 		}
 	}
 
