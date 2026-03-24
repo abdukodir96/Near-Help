@@ -121,6 +121,12 @@ export class AuthService {
 			if (errorName === 'TokenExpiredError') {
 				throw new UnauthorizedException(Message.ACCESS_TOKEN_EXPIRED);
 			}
+
+			const refreshTokenDetected = await this.isRefreshToken(accessToken);
+			if (refreshTokenDetected) {
+				throw new UnauthorizedException(Message.ACCESS_TOKEN_REQUIRED);
+			}
+
 			throw new UnauthorizedException(Message.INVALID_ACCESS_TOKEN);
 		}
 	}
@@ -140,5 +146,17 @@ export class AuthService {
 		if (!err || typeof err !== 'object') return undefined;
 		const name = (err as { name?: unknown }).name;
 		return typeof name === 'string' ? name : undefined;
+	}
+
+	private async isRefreshToken(token: string): Promise<boolean> {
+		try {
+			const payload = await this.jwtService.verifyAsync<MemberTokenPayload>(token, {
+				secret: getRefreshTokenSecret(),
+				ignoreExpiration: true,
+			});
+			return payload?.tokenType === 'refresh';
+		} catch {
+			return false;
+		}
 	}
 }

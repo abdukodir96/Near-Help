@@ -7,8 +7,8 @@ import { ServiceService } from './service.service';
 import { AuthModule } from '../auth/auth.module';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
-import { WithoutGuard } from '../../libs/guards/without.guard';
 import { ViewModule } from '../view/view.module';
+import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 
 @Module({
 	imports: [
@@ -19,7 +19,7 @@ import { ViewModule } from '../view/view.module';
 		AuthModule,
 		ViewModule,
 	],
-	providers: [ServiceResolver, ServiceService, AuthGuard, RolesGuard, WithoutGuard],
+	providers: [ServiceResolver, ServiceService, AuthGuard, RolesGuard, OptionalAuthGuard],
 	exports: [ServiceService],
 })
 export class ServiceModule {}

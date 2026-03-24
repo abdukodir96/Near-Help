@@ -13,6 +13,7 @@ export enum Message {
 	BLOCKED_USER = 'You have been blocked!',
 	WRONG_PASSWORD = 'Wrong password, try again!',
 	ACCESS_TOKEN_EXPIRED = 'Access token expired!',
+	ACCESS_TOKEN_REQUIRED = 'Access token is required for this request (refresh token is not allowed)!',
 	INVALID_ACCESS_TOKEN = 'Invalid access token!',
 	INVALID_REFRESH_TOKEN = 'Invalid refresh token!',
 	LOGOUT_SUCCESS = 'Logout completed successfully!',

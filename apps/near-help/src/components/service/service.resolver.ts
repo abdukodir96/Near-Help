@@ -8,8 +8,8 @@ import { RolesGuard } from '../../libs/guards/roles.guard';
 import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
-import { WithoutGuard } from '../../libs/guards/without.guard';
 import { AuthMemberPayload } from '../../libs/types/auth';
+import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 
 @Resolver()
 export class ServiceResolver {
@@ -26,7 +26,7 @@ export class ServiceResolver {
 		return this.serviceService.createService(memberId, input);
 	}
 
-	@UseGuards(WithoutGuard)
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => Service)
 	public async getService(
 		@AuthMember() authMember: AuthMemberPayload | null,
