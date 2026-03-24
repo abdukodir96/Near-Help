@@ -49,6 +49,10 @@ const ArticleSchema = new Schema(
 			required: true,
 			ref: 'Member',
 		},
+
+		deletedAt: {
+			type: Date,
+		},
 	},
 	{ timestamps: true, collection: 'articles' },
 );

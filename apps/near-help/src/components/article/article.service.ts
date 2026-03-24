@@ -7,6 +7,7 @@ import {
 	AllArticlesInquiry,
 	ArticlesInquiry,
 	GetArticleInput,
+	RemoveArticleByAdminInput,
 	UpdateArticleByAdminInput,
 } from '../../libs/dto/article/article.input';
 import { Member } from '../../libs/dto/member/member';
@@ -154,6 +155,45 @@ export class ArticleService {
 			console.log('Error, Article.updateArticleByAdmin:', errMessage);
 			throw new BadRequestException(Message.UPDATE_FAILED);
 		}
+	}
+
+	public async removeArticleByAdmin(input: RemoveArticleByAdminInput): Promise<Article> {
+		const { targetArticleId } = input;
+
+		const existingArticle = await this.articleModel.findById(targetArticleId).exec();
+		if (!existingArticle) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		if (existingArticle.articleStatus === ArticleStatus.DELETED) {
+			return existingArticle as Article;
+		}
+
+		let updatedArticle: Article | null = null;
+		try {
+			updatedArticle = await this.articleModel
+				.findByIdAndUpdate(
+					targetArticleId,
+					{
+						$set: {
+							articleStatus: ArticleStatus.DELETED,
+							deletedAt: new Date(),
+						},
+					},
+					{ new: true, runValidators: true },
+				)
+				.exec();
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Article.removeArticleByAdmin:', errMessage);
+			throw new BadRequestException(Message.REMOVE_FAILED);
+		}
+
+		if (!updatedArticle) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		return updatedArticle;
 	}
 
 	public async getArticles(input: ArticlesInquiry): Promise<Articles> {

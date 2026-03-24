@@ -161,3 +161,11 @@ export class UpdateArticleByAdminInput {
 	@Field(() => String, { nullable: true })
 	articleImage?: string;
 }
+
+@InputType()
+export class RemoveArticleByAdminInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetArticleId!: string;
+}

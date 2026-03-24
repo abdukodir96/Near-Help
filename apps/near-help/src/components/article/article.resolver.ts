@@ -7,6 +7,7 @@ import {
 	AllArticlesInquiry,
 	ArticlesInquiry,
 	GetArticleInput,
+	RemoveArticleByAdminInput,
 	UpdateArticleByAdminInput,
 } from '../../libs/dto/article/article.input';
 import { AuthGuard } from '../../libs/guards/auth.guard';
@@ -50,6 +51,14 @@ export class ArticleResolver {
 	public async updateArticleByAdmin(@Args('input') input: UpdateArticleByAdminInput): Promise<Article> {
 		console.log('Mutation: updateArticleByAdmin');
 		return this.articleService.updateArticleByAdmin(input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.ADMIN)
+	@Mutation(() => Article)
+	public async removeArticleByAdmin(@Args('input') input: RemoveArticleByAdminInput): Promise<Article> {
+		console.log('Mutation: removeArticleByAdmin');
+		return this.articleService.removeArticleByAdmin(input);
 	}
 
 	@UseGuards(OptionalAuthGuard)
