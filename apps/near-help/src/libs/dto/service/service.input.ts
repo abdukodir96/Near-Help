@@ -363,3 +363,11 @@ export class UpdateServiceByAdminInput {
 	@Field(() => String, { nullable: true })
 	serviceDesc?: string;
 }
+
+@InputType()
+export class RemovePropertyByAdminInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	targetServiceId!: string;
+}

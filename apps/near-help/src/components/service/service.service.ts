@@ -7,6 +7,7 @@ import {
 	GetAllServicesByAdminInput,
 	GetServiceInput,
 	GetServicesInput,
+	RemovePropertyByAdminInput,
 	UpdateServiceByAdminInput,
 	UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
@@ -365,6 +366,45 @@ export class ServiceService {
 			const errMessage = err instanceof Error ? err.message : String(err);
 			console.log('Error, Service.updateServiceByAdmin:', errMessage);
 			throw new BadRequestException(Message.UPDATE_FAILED);
+		}
+
+		if (!updatedService) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		return updatedService;
+	}
+
+	public async removePropertyByAdmin(input: RemovePropertyByAdminInput): Promise<Service> {
+		const { targetServiceId } = input;
+
+		const existingService = await this.serviceModel.findById(targetServiceId).exec();
+		if (!existingService) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		if (existingService.serviceStatus === ServiceStatus.DELETED) {
+			return existingService;
+		}
+
+		let updatedService: Service | null = null;
+		try {
+			updatedService = await this.serviceModel
+				.findByIdAndUpdate(
+					targetServiceId,
+					{
+						$set: {
+							serviceStatus: ServiceStatus.DELETED,
+							deletedAt: new Date(),
+						},
+					},
+					{ new: true, runValidators: true },
+				)
+				.exec();
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Service.removePropertyByAdmin:', errMessage);
+			throw new BadRequestException(Message.REMOVE_FAILED);
 		}
 
 		if (!updatedService) {
