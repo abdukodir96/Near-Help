@@ -281,19 +281,40 @@ export class ServiceService {
 		const page = input?.page && input.page > 0 ? input.page : 1;
 		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
 		const sort = this.getServiceSort(input?.sortBy);
-		const totalCount = await this.serviceModel.countDocuments(filter).exec();
-
-		const services = await this.serviceModel
-			.find(filter)
-			.sort(sort)
-			.skip((page - 1) * limit)
-			.limit(limit)
+		const data = await this.serviceModel
+			.aggregate<ServicesAggregateResult>([
+				{ $match: filter },
+				{ $sort: sort },
+				{
+					$facet: {
+						list: [
+							{ $skip: (page - 1) * limit },
+							{ $limit: limit },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'memberId',
+									foreignField: '_id',
+									as: 'memberData',
+								},
+							},
+							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+							...lookupAuthMemberLiked(authMember?._id, LikeGroup.SERVICE),
+							...lookupAuthMemberFollowed(authMember?._id, '$memberId', 'memberFollowed'),
+							{ $addFields: { 'memberData.meFollowed': '$memberFollowed' } },
+							{ $project: { memberFollowed: 0 } },
+						],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
 			.exec();
 
+		const totalCount = data[0]?.metaCounter?.[0]?.total ?? 0;
 		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
 
 		return {
-			list: services as Service[],
+			list: data[0]?.list ?? [],
 			meta: {
 				totalCount,
 				page,

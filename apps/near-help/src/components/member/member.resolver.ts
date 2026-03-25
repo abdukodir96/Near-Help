@@ -19,6 +19,8 @@ import { MemberType } from '../../libs/enums/member.enum';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { WithoutGuard } from '../../libs/guards/without.guard';
+import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
+import type { AuthMemberPayload } from '../../libs/types/auth';
 
 @Resolver()
 export class MemberResolver {
@@ -86,10 +88,14 @@ export class MemberResolver {
 		return this.memberService.getMember(memberId, input?.targetMemberId);
 	}
 
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => AgentsResult)
-	public async getAgents(@Args('input', { nullable: true }) input?: GetAgentsInput): Promise<AgentsResult> {
+	public async getAgents(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input', { nullable: true }) input?: GetAgentsInput,
+	): Promise<AgentsResult> {
 		console.log('Query: getAgents');
-		return this.memberService.getAgents(input);
+		return this.memberService.getAgents(authMember, input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

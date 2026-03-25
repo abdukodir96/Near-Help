@@ -25,6 +25,13 @@ import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/au
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
+import { lookupAuthMemberFollowed } from '../../libs/config';
+import { AuthMemberPayload } from '../../libs/types/auth';
+
+type AgentsAggregateResult = {
+	list: Member[];
+	metaCounter: Array<{ total: number }>;
+};
 
 @Injectable()
 export class MemberService {
@@ -214,7 +221,7 @@ export class MemberService {
 		return member as MemberPrivate;
 	}
 
-	public async getAgents(input?: GetAgentsInput): Promise<AgentsResult> {
+	public async getAgents(authMember: AuthMemberPayload | null, input?: GetAgentsInput): Promise<AgentsResult> {
 		const filter: Record<string, unknown> = {
 			memberType: MemberType.AGENT,
 			memberStatus: MemberStatus.ACTIVE,
@@ -234,19 +241,24 @@ export class MemberService {
 		const page = input?.page && input.page > 0 ? input.page : 1;
 		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
 		const sort = this.getAgentSort(input?.sortBy);
-		const totalCount = await this.memberModel.countDocuments(filter).exec();
-
-		const agents = await this.memberModel
-			.find(filter)
-			.sort(sort)
-			.skip((page - 1) * limit)
-			.limit(limit)
+		const data = await this.memberModel
+			.aggregate<AgentsAggregateResult>([
+				{ $match: filter },
+				{ $sort: sort },
+				{
+					$facet: {
+						list: [{ $skip: (page - 1) * limit }, { $limit: limit }, ...lookupAuthMemberFollowed(authMember?._id)],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
 			.exec();
 
+		const totalCount = data[0]?.metaCounter?.[0]?.total ?? 0;
 		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
 
 		return {
-			list: agents as Member[],
+			list: data[0]?.list ?? [],
 			meta: {
 				totalCount,
 				page,

@@ -22,7 +22,7 @@ import { ArticleStatus } from '../../libs/enums/article.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { lookupAuthMemberLiked } from '../../libs/config';
+import { lookupAuthMemberFollowed, lookupAuthMemberLiked } from '../../libs/config';
 
 type CommentsAggregateResult = {
 	list: Comment[];
@@ -210,6 +210,9 @@ export class CommentService {
 							},
 							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
 							...lookupAuthMemberLiked(authMember?._id, LikeGroup.COMMENT),
+							...lookupAuthMemberFollowed(authMember?._id, '$memberId', 'memberFollowed'),
+							{ $addFields: { 'memberData.meFollowed': '$memberFollowed' } },
+							{ $project: { memberFollowed: 0 } },
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -340,6 +343,9 @@ export class CommentService {
 				},
 				{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
 				...lookupAuthMemberLiked(authMember?._id, LikeGroup.COMMENT),
+				...lookupAuthMemberFollowed(authMember?._id, '$memberId', 'memberFollowed'),
+				{ $addFields: { 'memberData.meFollowed': '$memberFollowed' } },
+				{ $project: { memberFollowed: 0 } },
 				{ $sort: sort },
 				{
 					$facet: {
