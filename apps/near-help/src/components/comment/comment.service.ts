@@ -22,7 +22,7 @@ import { ArticleStatus } from '../../libs/enums/article.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 import { LikeGroup } from '../../libs/enums/like.enum';
-import { Like } from '../../libs/dto/like/like';
+import { lookupAuthMemberLiked } from '../../libs/config';
 
 type CommentsAggregateResult = {
 	list: Comment[];
@@ -36,7 +36,6 @@ export class CommentService {
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Article') private readonly articleModel: Model<Article>,
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
-		@InjectModel('Like') private readonly likeModel: Model<Like>,
 	) {}
 
 	public async createComment(memberId: string, input: CommentInput): Promise<Comment> {
@@ -210,6 +209,7 @@ export class CommentService {
 								},
 							},
 							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+							...lookupAuthMemberLiked(authMember?._id, LikeGroup.COMMENT),
 						],
 						metaCounter: [{ $count: 'total' }],
 					},
@@ -217,11 +217,8 @@ export class CommentService {
 			])
 			.exec();
 
-		const list = data[0]?.list ?? [];
-		await this.attachMeLikedFlags(authMember, list);
-
 		return {
-			list,
+			list: data[0]?.list ?? [],
 			metaCounter: data[0]?.metaCounter ?? [],
 		};
 	}
@@ -286,7 +283,7 @@ export class CommentService {
 		};
 	}
 
-	public async getCommentThread(input: GetCommentThreadInput): Promise<Comments> {
+	public async getCommentThread(authMember: AuthMemberPayload | null, input: GetCommentThreadInput): Promise<Comments> {
 		const page = input.page && input.page > 0 ? input.page : 1;
 		const limit = input.limit && input.limit > 0 ? Math.min(input.limit, 100) : 50;
 		const sortField = input.sort ?? 'createdAt';
@@ -342,6 +339,7 @@ export class CommentService {
 					},
 				},
 				{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+				...lookupAuthMemberLiked(authMember?._id, LikeGroup.COMMENT),
 				{ $sort: sort },
 				{
 					$facet: {
@@ -464,32 +462,5 @@ export class CommentService {
 
 		await Promise.all(postDeleteOperations);
 		return updatedComment;
-	}
-
-	private async attachMeLikedFlags(authMember: AuthMemberPayload | null, comments: Comment[]): Promise<void> {
-		if (comments.length === 0) return;
-
-		if (!authMember) {
-			comments.forEach((comment) => {
-				comment.meLiked = false;
-			});
-			return;
-		}
-
-		const commentIds = comments.map((comment) => comment._id);
-		const likes = await this.likeModel
-			.find({
-				memberId: authMember._id,
-				likeGroup: LikeGroup.COMMENT,
-				likeRefId: { $in: commentIds },
-			})
-			.select({ likeRefId: 1 })
-			.lean()
-			.exec();
-
-		const likedCommentIdSet = new Set(likes.map((like) => String(like.likeRefId)));
-		comments.forEach((comment) => {
-			comment.meLiked = likedCommentIdSet.has(String(comment._id));
-		});
 	}
 }

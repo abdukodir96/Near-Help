@@ -94,9 +94,13 @@ export class CommentResolver {
 		return this.commentService.getAllCommentsByAdmin(input);
 	}
 
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => Comments)
-	public async getCommentThread(@Args('input') input: GetCommentThreadInput): Promise<Comments> {
+	public async getCommentThread(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: GetCommentThreadInput,
+	): Promise<Comments> {
 		console.log('Query: getCommentThread');
-		return this.commentService.getCommentThread(input);
+		return this.commentService.getCommentThread(authMember, input);
 	}
 }

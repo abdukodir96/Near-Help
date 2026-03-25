@@ -1,3 +1,6 @@
+import { PipelineStage, Types } from 'mongoose';
+import { LikeGroup } from './enums/like.enum';
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 const parsePositiveInt = (value: string | undefined, fallback: number): number => {
@@ -19,6 +22,53 @@ export const uploadConfig = {
 };
 
 export const availableCommentSorts = ['createdAt', 'updatedAt'] as const;
+
+const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
+	typeof value === 'string' ? new Types.ObjectId(value) : value;
+
+type LookupAuthMemberLikedStage = PipelineStage.Lookup | PipelineStage.AddFields | PipelineStage.Project;
+
+export const lookupAuthMemberLiked = (
+	authMemberId: string | Types.ObjectId | null | undefined,
+	likeGroup: LikeGroup,
+	likeRefIdExpr = '$_id',
+): LookupAuthMemberLikedStage[] => {
+	if (!authMemberId) {
+		return [{ $addFields: { meLiked: false } }];
+	}
+
+	const memberObjectId = toObjectId(authMemberId);
+
+	return [
+		{
+			$lookup: {
+				from: 'likes',
+				let: { refId: likeRefIdExpr },
+				pipeline: [
+					{
+						$match: {
+							$expr: {
+								$and: [
+									{ $eq: ['$memberId', memberObjectId] },
+									{ $eq: ['$likeGroup', likeGroup] },
+									{ $eq: ['$likeRefId', '$$refId'] },
+								],
+							},
+						},
+					},
+					{ $project: { _id: 1 } },
+				],
+				as: 'meLikedDocs',
+			},
+		},
+		{
+			$addFields: {
+				meLiked: { $gt: [{ $size: '$meLikedDocs' }, 0] },
+			},
+		},
+		{ $project: { meLikedDocs: 0 } },
+	];
+};
 
 export const getAccessTokenSecret = (): string => {
 	const secret = process.env.JWT_ACCESS_SECRET;

@@ -4,7 +4,6 @@ import CommentSchema from '../../schemas/Comment.model';
 import MemberSchema from '../../schemas/Member.model';
 import ArticleSchema from '../../schemas/Article.model';
 import ServiceSchema from '../../schemas/Service.model';
-import LikeSchema from '../../schemas/Like.model';
 import { CommentResolver } from './comment.resolver';
 import { CommentService } from './comment.service';
 import { AuthModule } from '../auth/auth.module';
@@ -19,7 +18,6 @@ import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 			{ name: 'Member', schema: MemberSchema },
 			{ name: 'Article', schema: ArticleSchema },
 			{ name: 'Service', schema: ServiceSchema },
-			{ name: 'Like', schema: LikeSchema },
 		]),
 		AuthModule,
 	],
