@@ -1,8 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Like, MeLiked } from '../../libs/dto/like/like';
 import {
+	GetFavoritesInput,
 	LikeInput,
 	LikeTargetArticleInput,
 	LikeTargetCommentInput,
@@ -19,6 +20,13 @@ import type { Article } from '../../libs/dto/article/article';
 import type { Comment } from '../../libs/dto/comment/comment';
 import type { Member } from '../../libs/dto/member/member';
 import type { Service } from '../../libs/dto/service/service';
+import { ServicesResult } from '../../libs/dto/service/service';
+import { lookupAuthMemberFollowed, lookupAuthMemberLiked } from '../../libs/config';
+
+type FavoritesAggregateResult = {
+	list: Service[];
+	metaCounter: Array<{ total: number }>;
+};
 
 @Injectable()
 export class LikeService {
@@ -129,6 +137,77 @@ export class LikeService {
 			memberId,
 			likeRefId: input.likeRefId,
 			myFavorite: Boolean(existingLike),
+		};
+	}
+
+	public async getFavorites(memberId: string, input?: GetFavoritesInput): Promise<ServicesResult> {
+		await this.ensureActorCanLike(memberId);
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+
+		const data = await this.likeModel
+			.aggregate<FavoritesAggregateResult>([
+				{
+					$match: {
+						memberId: new Types.ObjectId(memberId),
+						likeGroup: LikeGroup.SERVICE,
+					},
+				},
+				{ $sort: { createdAt: -1 } },
+				{
+					$lookup: {
+						from: 'services',
+						localField: 'likeRefId',
+						foreignField: '_id',
+						as: 'serviceData',
+					},
+				},
+				{ $unwind: { path: '$serviceData', preserveNullAndEmptyArrays: false } },
+				{
+					$match: {
+						'serviceData.serviceStatus': ServiceStatus.ACTIVE,
+					},
+				},
+				{ $replaceRoot: { newRoot: '$serviceData' } },
+				{
+					$facet: {
+						list: [
+							{ $skip: (page - 1) * limit },
+							{ $limit: limit },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'memberId',
+									foreignField: '_id',
+									as: 'memberData',
+								},
+							},
+							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+							...lookupAuthMemberLiked(memberId, LikeGroup.SERVICE),
+							...lookupAuthMemberFollowed(memberId, '$memberId', 'memberFollowed'),
+							{ $addFields: { 'memberData.meFollowed': '$memberFollowed' } },
+							{ $project: { memberFollowed: 0 } },
+						],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
+			.exec();
+
+		const totalCount = data[0]?.metaCounter?.[0]?.total ?? 0;
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: data[0]?.list ?? [],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
 		};
 	}
 

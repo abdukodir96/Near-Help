@@ -3,6 +3,7 @@ import { UseGuards } from '@nestjs/common';
 import { LikeService } from './like.service';
 import { MeLiked } from '../../libs/dto/like/like';
 import {
+	GetFavoritesInput,
 	LikeTargetArticleInput,
 	LikeTargetCommentInput,
 	LikeTargetMemberInput,
@@ -14,6 +15,7 @@ import { RolesGuard } from '../../libs/guards/roles.guard';
 import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
+import { ServicesResult } from '../../libs/dto/service/service';
 
 @Resolver()
 export class LikeResolver {
@@ -69,5 +71,16 @@ export class LikeResolver {
 	public async getMeLiked(@AuthMember('_id') memberId: string, @Args('input') input: LikeInput): Promise<MeLiked> {
 		console.log('Query: getMeLiked');
 		return this.likeService.getMeLiked(memberId, input);
+	}
+
+	@UseGuards(AuthGuard, RolesGuard)
+	@Roles(MemberType.USER, MemberType.AGENT, MemberType.ADMIN)
+	@Query(() => ServicesResult)
+	public async getFavorites(
+		@AuthMember('_id') memberId: string,
+		@Args('input', { nullable: true }) input?: GetFavoritesInput,
+	): Promise<ServicesResult> {
+		console.log('Query: getFavorites');
+		return this.likeService.getFavorites(memberId, input);
 	}
 }
