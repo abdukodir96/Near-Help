@@ -71,10 +71,14 @@ export class ArticleResolver {
 		return this.articleService.getArticle(authMember, input);
 	}
 
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => Articles)
-	public async getArticles(@Args('input') input: ArticlesInquiry): Promise<Articles> {
+	public async getArticles(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input') input: ArticlesInquiry,
+	): Promise<Articles> {
 		console.log('Query: getArticles');
-		return this.articleService.getArticles(input);
+		return this.articleService.getArticles(authMember, input);
 	}
 
 	@UseGuards(AuthGuard, RolesGuard)

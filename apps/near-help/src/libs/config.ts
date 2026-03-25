@@ -27,6 +27,7 @@ const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
 	typeof value === 'string' ? new Types.ObjectId(value) : value;
 
 type LookupAuthMemberLikedStage = PipelineStage.Lookup | PipelineStage.AddFields | PipelineStage.Project;
+type LookupAuthMemberFollowedStage = PipelineStage.Lookup | PipelineStage.AddFields | PipelineStage.Project;
 
 export const lookupAuthMemberLiked = (
 	authMemberId: string | Types.ObjectId | null | undefined,
@@ -67,6 +68,45 @@ export const lookupAuthMemberLiked = (
 			},
 		},
 		{ $project: { meLikedDocs: 0 } },
+	];
+};
+
+export const lookupAuthMemberFollowed = (
+	authMemberId: string | Types.ObjectId | null | undefined,
+	followingIdExpr = '$_id',
+	asField = 'meFollowed',
+): LookupAuthMemberFollowedStage[] => {
+	if (!authMemberId) {
+		return [{ $addFields: { [asField]: false } }];
+	}
+
+	const memberObjectId = toObjectId(authMemberId);
+	const docField = `${asField}Docs`;
+
+	return [
+		{
+			$lookup: {
+				from: 'follows',
+				let: { followingId: followingIdExpr },
+				pipeline: [
+					{
+						$match: {
+							$expr: {
+								$and: [{ $eq: ['$followerId', memberObjectId] }, { $eq: ['$followingId', '$$followingId'] }],
+							},
+						},
+					},
+					{ $project: { _id: 1 } },
+				],
+				as: docField,
+			},
+		},
+		{
+			$addFields: {
+				[asField]: { $gt: [{ $size: `$${docField}` }, 0] },
+			},
+		},
+		{ $project: { [docField]: 0 } },
 	];
 };
 

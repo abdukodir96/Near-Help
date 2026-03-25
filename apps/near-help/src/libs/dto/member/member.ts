@@ -62,6 +62,9 @@ export class Member {
 	@Field(() => Int)
 	memberRank!: number;
 
+	@Field(() => Boolean, { nullable: true })
+	meFollowed?: boolean;
+
 	@Field(() => Int)
 	memberWarnings!: number;
 

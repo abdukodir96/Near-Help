@@ -2,6 +2,7 @@ import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
 import { ServiceOption } from '../../enums/service-option.enum';
 import { ServiceCategory, ServiceLocation, ServiceStatus } from '../../enums/service.enum';
+import { Member } from '../member/member';
 
 @ObjectType()
 export class Service {
@@ -64,6 +65,9 @@ export class Service {
 
 	@Field(() => Boolean, { nullable: true })
 	meLiked?: boolean;
+
+	@Field(() => Member, { nullable: true })
+	memberData?: Member;
 }
 
 @ObjectType()

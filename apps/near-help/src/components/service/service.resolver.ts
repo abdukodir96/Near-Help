@@ -56,10 +56,14 @@ export class ServiceResolver {
 		return this.serviceService.getService(authMember, input);
 	}
 
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => ServicesResult)
-	public async getServices(@Args('input', { nullable: true }) input?: GetServicesInput): Promise<ServicesResult> {
+	public async getServices(
+		@AuthMember() authMember: AuthMemberPayload | null,
+		@Args('input', { nullable: true }) input?: GetServicesInput,
+	): Promise<ServicesResult> {
 		console.log('Query: getServices');
-		return this.serviceService.getServices(input);
+		return this.serviceService.getServices(authMember, input);
 	}
 
 	@UseGuards(OptionalAuthGuard)

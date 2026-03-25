@@ -20,6 +20,12 @@ import { ArticleStatus } from '../../libs/enums/article.enum';
 import { ArticleUpdate } from '../../libs/dto/article/article.update';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { Like } from '../../libs/dto/like/like';
+import { lookupAuthMemberFollowed, lookupAuthMemberLiked } from '../../libs/config';
+
+type ArticlesAggregateResult = {
+	list: Article[];
+	metaCounter: Array<{ total: number }>;
+};
 
 @Injectable()
 export class ArticleService {
@@ -213,7 +219,7 @@ export class ArticleService {
 		return updatedArticle;
 	}
 
-	public async getArticles(input: ArticlesInquiry): Promise<Articles> {
+	public async getArticles(authMember: AuthMemberPayload | null, input: ArticlesInquiry): Promise<Articles> {
 		const filter: Record<string, unknown> = {
 			articleStatus: ArticleStatus.ACTIVE,
 		};
@@ -237,14 +243,38 @@ export class ArticleService {
 		const sort: Record<string, 1 | -1> = { [sortField]: sortDirection };
 		const skip = (input.page - 1) * input.limit;
 
-		const [list, totalCount] = await Promise.all([
-			this.articleModel.find(filter).sort(sort).skip(skip).limit(input.limit).exec(),
-			this.articleModel.countDocuments(filter).exec(),
-		]);
+		const data = await this.articleModel
+			.aggregate<ArticlesAggregateResult>([
+				{ $match: filter },
+				{ $sort: sort },
+				{
+					$facet: {
+						list: [
+							{ $skip: skip },
+							{ $limit: input.limit },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'memberId',
+									foreignField: '_id',
+									as: 'memberData',
+								},
+							},
+							{ $unwind: { path: '$memberData', preserveNullAndEmptyArrays: true } },
+							...lookupAuthMemberLiked(authMember?._id, LikeGroup.ARTICLE),
+							...lookupAuthMemberFollowed(authMember?._id, '$memberId', 'memberFollowed'),
+							{ $addFields: { 'memberData.meFollowed': '$memberFollowed' } },
+							{ $project: { memberFollowed: 0 } },
+						],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
+			.exec();
 
 		return {
-			list: list as Article[],
-			metaCounter: [{ total: totalCount }],
+			list: data[0]?.list ?? [],
+			metaCounter: data[0]?.metaCounter ?? [],
 		};
 	}
 
