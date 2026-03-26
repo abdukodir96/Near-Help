@@ -10,6 +10,7 @@ import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { ViewModule } from '../view/view.module';
 import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
 	imports: [
@@ -20,6 +21,7 @@ import { OptionalAuthGuard } from '../../libs/guards/optional-auth.guard';
 		]),
 		AuthModule,
 		ViewModule,
+		AiModule,
 	],
 	providers: [ServiceResolver, ServiceService, AuthGuard, RolesGuard, OptionalAuthGuard],
 	exports: [ServiceService],

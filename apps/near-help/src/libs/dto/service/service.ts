@@ -68,6 +68,11 @@ export class Service {
 
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
+
+	@Field(() => Float, { nullable: true })
+	semanticScore?: number;
+
+	embedding?: number[];
 }
 
 @ObjectType()

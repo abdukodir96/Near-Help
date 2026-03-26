@@ -39,7 +39,7 @@ export class AiPricingService {
 			schema: pricingResponseSchema,
 		});
 
-		return this.normalizePriceEstimate(result);
+		return this.normalizePriceEstimate(this.validateRawPriceEstimate(result));
 	}
 
 	private normalizePriceEstimate(result: RawPriceEstimate): PriceEstimate {
@@ -47,15 +47,39 @@ export class AiPricingService {
 		const max = this.normalizePrice(result.estimatedMaxPrice);
 		const estimatedMinPrice = Math.min(min, max);
 		const estimatedMaxPrice = Math.max(min, max);
+		const summary = this.normalizeSummary(result.summary);
+
+		if (estimatedMaxPrice <= 0) {
+			throw new ServiceUnavailableException('AI pricing returned an invalid price range.');
+		}
 
 		return {
 			estimatedMinPrice,
 			estimatedMaxPrice,
-			currency: result.currency === 'KRW' ? 'KRW' : 'KRW',
+			currency: this.normalizeCurrency(result.currency),
 			confidence: this.normalizeConfidence(result.confidence),
-			summary: result.summary.trim(),
+			summary,
 			disclaimer: AI_PRICING_DISCLAIMER,
 		};
+	}
+
+	private validateRawPriceEstimate(payload: unknown): RawPriceEstimate {
+		if (!payload || typeof payload !== 'object') {
+			throw new ServiceUnavailableException('AI pricing returned an invalid response payload.');
+		}
+
+		const candidate = payload as Partial<RawPriceEstimate>;
+		if (
+			typeof candidate.estimatedMinPrice !== 'number' ||
+			typeof candidate.estimatedMaxPrice !== 'number' ||
+			typeof candidate.currency !== 'string' ||
+			typeof candidate.confidence !== 'number' ||
+			typeof candidate.summary !== 'string'
+		) {
+			throw new ServiceUnavailableException('AI pricing returned an incomplete response payload.');
+		}
+
+		return candidate as RawPriceEstimate;
 	}
 
 	private normalizePrice(value: number): number {
@@ -66,8 +90,21 @@ export class AiPricingService {
 		return Math.round(value);
 	}
 
+	private normalizeCurrency(value: string): string {
+		return value.trim().toUpperCase() === 'KRW' ? 'KRW' : 'KRW';
+	}
+
 	private normalizeConfidence(value: number): number {
 		if (!Number.isFinite(value)) return 0;
 		return Math.min(100, Math.max(0, Math.round(value)));
+	}
+
+	private normalizeSummary(value: string): string {
+		const summary = value.trim().replace(/\s+/g, ' ');
+		if (!summary) {
+			throw new ServiceUnavailableException('AI pricing returned an empty summary.');
+		}
+
+		return summary.slice(0, 240);
 	}
 }

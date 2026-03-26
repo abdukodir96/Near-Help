@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -22,6 +22,7 @@ import { ViewGroup } from '../../libs/enums/view.enum';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { Like } from '../../libs/dto/like/like';
 import { lookupAuthMemberFollowed, lookupAuthMemberLiked } from '../../libs/config';
+import { AiEmbeddingService } from '../ai/embeddings/ai-embedding.service';
 
 type ServicesAggregateResult = {
 	list: Service[];
@@ -30,11 +31,14 @@ type ServicesAggregateResult = {
 
 @Injectable()
 export class ServiceService {
+	private readonly logger = new Logger(ServiceService.name);
+
 	constructor(
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Like') private readonly likeModel: Model<Like>,
 		private readonly viewService: ViewService,
+		private readonly aiEmbeddingService: AiEmbeddingService,
 	) {}
 
 	public async createService(memberId: string, input: CreateServiceInput): Promise<Service> {
@@ -53,6 +57,7 @@ export class ServiceService {
 			});
 
 			await this.memberModel.updateOne({ _id: memberId }, { $inc: { memberServices: 1 } }).exec();
+			this.triggerServiceEmbeddingSync(String(createdService._id));
 			return createdService as Service;
 		} catch (err: unknown) {
 			const errMessage = err instanceof Error ? err.message : String(err);
@@ -90,6 +95,10 @@ export class ServiceService {
 
 			if (!updatedService) {
 				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			if (this.shouldRefreshServiceEmbedding(payload)) {
+				this.triggerServiceEmbeddingSync(targetServiceId);
 			}
 
 			return updatedService as Service;
@@ -437,6 +446,10 @@ export class ServiceService {
 			throw new NotFoundException(Message.NO_DATA_FOUND);
 		}
 
+		if (this.shouldRefreshServiceEmbedding(payload)) {
+			this.triggerServiceEmbeddingSync(targetServiceId);
+		}
+
 		return updatedService;
 	}
 
@@ -495,5 +508,18 @@ export class ServiceService {
 			default:
 				return { createdAt: -1 };
 		}
+	}
+
+	private shouldRefreshServiceEmbedding(payload: Record<string, unknown>): boolean {
+		return ['serviceCategory', 'serviceOption', 'serviceAddress', 'serviceArea', 'serviceTitle', 'serviceDesc'].some(
+			(field) => field in payload,
+		);
+	}
+
+	private triggerServiceEmbeddingSync(serviceId: string): void {
+		void this.aiEmbeddingService.syncServiceEmbeddingById(serviceId).catch((err: unknown) => {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			this.logger.warn(`Service embedding sync skipped for ${serviceId}: ${errMessage}`);
+		});
 	}
 }

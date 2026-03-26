@@ -15,6 +15,9 @@ export const openAIProvider: Provider<OpenAIProviderOptions> = {
 		timeoutMs: aiConfig.timeoutMs,
 		maxRetries: aiConfig.maxRetries,
 		pricingEnabled: aiConfig.pricingEnabled,
+		embeddingEnabled: aiConfig.embeddingEnabled,
+		recommendationEnabled: aiConfig.recommendationEnabled,
+		semanticCandidateLimit: aiConfig.semanticCandidateLimit,
 		logEnabled: aiConfig.logEnabled,
 	}),
 };

@@ -13,9 +13,11 @@ Rules:
 - The minimum must be less than or equal to the maximum.
 - Use KRW as the currency.
 - Confidence must be between 0 and 100.
-- The summary must be one short paragraph in plain English.
+- The summary must be one short paragraph in plain English with no markdown.
+- Keep the summary concise, ideally under 240 characters.
 - Do not present the estimate as a guaranteed or final price.
 - Assume the final quote depends on on-site inspection, scope, urgency, and material costs.
+- If the request is ambiguous, still return a conservative estimate and briefly mention the uncertainty.
 `.trim();
 
 export const buildPricingUserPrompt = (input: EstimateServicePriceInput): string =>
@@ -53,8 +55,6 @@ export const pricingResponseSchema = {
 		},
 		summary: {
 			type: 'string',
-			minLength: 10,
-			maxLength: 400,
 		},
 	},
 } as const;

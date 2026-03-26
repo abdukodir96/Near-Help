@@ -30,6 +30,9 @@ export const aiConfig = {
 	timeoutMs: parsePositiveInt(process.env.OPENAI_TIMEOUT_MS, 15000),
 	maxRetries: parsePositiveInt(process.env.OPENAI_MAX_RETRIES, 2),
 	pricingEnabled: process.env.AI_PRICING_ENABLED !== 'false',
+	embeddingEnabled: process.env.AI_EMBEDDING_ENABLED !== 'false',
+	recommendationEnabled: process.env.AI_RECOMMENDATION_ENABLED !== 'false',
+	semanticCandidateLimit: parsePositiveInt(process.env.AI_SEMANTIC_CANDIDATE_LIMIT, 300),
 	logEnabled: process.env.AI_LOG_ENABLED !== 'false',
 };
 

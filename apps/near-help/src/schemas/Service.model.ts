@@ -71,6 +71,11 @@ const ServiceSchema = new Schema(
 			type: String,
 		},
 
+		embedding: {
+			type: [Number],
+			default: undefined,
+		},
+
 		memberId: {
 			type: Schema.Types.ObjectId,
 			required: true,

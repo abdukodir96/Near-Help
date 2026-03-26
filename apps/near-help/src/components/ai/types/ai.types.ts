@@ -7,6 +7,9 @@ export type OpenAIProviderOptions = {
 	timeoutMs: number;
 	maxRetries: number;
 	pricingEnabled: boolean;
+	embeddingEnabled: boolean;
+	recommendationEnabled: boolean;
+	semanticCandidateLimit: number;
 	logEnabled: boolean;
 };
 
@@ -36,6 +39,20 @@ export type ResponsesApiResponse = {
 		type?: string;
 		content?: ResponsesApiOutputItem[];
 	}>;
+	error?: {
+		message?: string;
+	};
+};
+
+export type EmbeddingsApiResponse = {
+	data?: Array<{
+		embedding?: number[];
+		index?: number;
+	}>;
+	usage?: {
+		prompt_tokens?: number;
+		total_tokens?: number;
+	};
 	error?: {
 		message?: string;
 	};
