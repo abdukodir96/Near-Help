@@ -21,6 +21,18 @@ export const uploadConfig = {
 	maxImageFiles: parsePositiveInt(process.env.UPLOAD_MAX_IMAGE_FILES, 10),
 };
 
+export const aiConfig = {
+	baseUrl: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1',
+	apiKey: process.env.OPENAI_API_KEY ?? '',
+	pricingModel: process.env.OPENAI_MODEL_PRICING ?? 'gpt-5-mini',
+	chatModel: process.env.OPENAI_MODEL_CHAT ?? 'gpt-5-mini',
+	embeddingModel: process.env.OPENAI_MODEL_EMBEDDING ?? 'text-embedding-3-small',
+	timeoutMs: parsePositiveInt(process.env.OPENAI_TIMEOUT_MS, 15000),
+	maxRetries: parsePositiveInt(process.env.OPENAI_MAX_RETRIES, 2),
+	pricingEnabled: process.env.AI_PRICING_ENABLED !== 'false',
+	logEnabled: process.env.AI_LOG_ENABLED !== 'false',
+};
+
 export const availableCommentSorts = ['createdAt', 'updatedAt'] as const;
 
 const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
