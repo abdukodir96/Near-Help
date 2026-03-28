@@ -10,6 +10,7 @@ import { ArticleModule } from './article/article.module';
 import { UploadModule } from './upload/upload.module';
 import { SocketModule } from './socket/socket.module';
 import { AiModule } from './ai/ai.module';
+import { BookingModule } from './booking/booking.module';
 
 @Module({
 	imports: [
@@ -19,6 +20,7 @@ import { AiModule } from './ai/ai.module';
 		ArticleModule,
 		LikeModule,
 		ViewModule,
+		BookingModule,
 		UploadModule,
 		CommentModule,
 		FollowModule,
