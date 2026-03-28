@@ -15,6 +15,7 @@ import { Message } from '../../libs/enums/common.enum';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
+import { NotificationService } from '../notification/notification.service';
 
 type BookingsAggregateResult = {
 	list: Booking[];
@@ -35,6 +36,7 @@ export class BookingService {
 		@InjectModel('Booking') private readonly bookingModel: Model<Booking>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
+		private readonly notificationService: NotificationService,
 	) {}
 
 	public async createBooking(customerId: string, input: CreateBookingInput): Promise<Booking> {
@@ -169,6 +171,15 @@ export class BookingService {
 				throw new NotFoundException(Message.NO_DATA_FOUND);
 			}
 
+			await this.createBookingNotificationSafely({
+				authorId: authMember._id,
+				receiverId: String(updatedBooking.customerId),
+				bookingId: String(updatedBooking._id),
+				serviceId: String(updatedBooking.serviceId),
+				bookingStatus: updatedBooking.bookingStatus,
+				serviceTitleSnapshot: updatedBooking.serviceTitleSnapshot,
+			});
+
 			return updatedBooking as Booking;
 		} catch (err: unknown) {
 			const errMessage = err instanceof Error ? err.message : String(err);
@@ -259,5 +270,21 @@ export class BookingService {
 		}
 
 		return member;
+	}
+
+	private async createBookingNotificationSafely(input: {
+		authorId: string;
+		receiverId: string;
+		bookingId: string;
+		serviceId: string;
+		bookingStatus: BookingStatus;
+		serviceTitleSnapshot: string;
+	}): Promise<void> {
+		try {
+			await this.notificationService.createBookingNotification(input);
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Warning, Booking.createBookingNotificationSafely:', errMessage);
+		}
 	}
 }

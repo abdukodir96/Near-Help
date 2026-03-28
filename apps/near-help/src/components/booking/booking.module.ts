@@ -4,6 +4,7 @@ import BookingSchema from '../../schemas/Booking.model';
 import MemberSchema from '../../schemas/Member.model';
 import ServiceSchema from '../../schemas/Service.model';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { BookingResolver } from './booking.resolver';
@@ -17,6 +18,7 @@ import { BookingService } from './booking.service';
 			{ name: 'Service', schema: ServiceSchema },
 		]),
 		AuthModule,
+		NotificationModule,
 	],
 	providers: [BookingResolver, BookingService, AuthGuard, RolesGuard],
 	exports: [BookingService],

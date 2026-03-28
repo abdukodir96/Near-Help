@@ -1,6 +1,7 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 import * as mongoose from 'mongoose';
 import { NotificationGroup, NotificationStatus, NotificationType } from '../../enums/notification.enum';
+import { PaginationMeta } from '../member/member';
 
 @ObjectType()
 export class Notification {
@@ -32,6 +33,9 @@ export class Notification {
 	threadId?: string;
 
 	@Field(() => String, { nullable: true })
+	bookingId?: string;
+
+	@Field(() => String, { nullable: true })
 	serviceId?: string;
 
 	@Field(() => String, { nullable: true })
@@ -42,4 +46,19 @@ export class Notification {
 
 	@Field(() => Date)
 	updatedAt!: Date;
+}
+
+@ObjectType()
+export class NotificationsResult {
+	@Field(() => [Notification])
+	list!: Notification[];
+
+	@Field(() => PaginationMeta)
+	meta!: PaginationMeta;
+}
+
+@ObjectType()
+export class NotificationMarkedResult {
+	@Field(() => Int)
+	markedCount!: number;
 }

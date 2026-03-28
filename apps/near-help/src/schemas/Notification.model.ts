@@ -47,6 +47,11 @@ const NotificationSchema = new Schema(
 			ref: 'MessageThread',
 		},
 
+		bookingId: {
+			type: Schema.Types.ObjectId,
+			ref: 'Booking',
+		},
+
 		serviceId: {
 			type: Schema.Types.ObjectId,
 			ref: 'Service',
@@ -62,5 +67,6 @@ const NotificationSchema = new Schema(
 
 NotificationSchema.index({ receiverId: 1, notificationStatus: 1, createdAt: -1 });
 NotificationSchema.index({ threadId: 1, receiverId: 1, notificationStatus: 1 });
+NotificationSchema.index({ bookingId: 1, receiverId: 1, notificationStatus: 1 });
 
 export default NotificationSchema;
