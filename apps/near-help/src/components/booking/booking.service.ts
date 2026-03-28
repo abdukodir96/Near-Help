@@ -1,14 +1,33 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Booking } from '../../libs/dto/booking/booking';
-import { CreateBookingInput } from '../../libs/dto/booking/booking.input';
+import { Booking, BookingsResult } from '../../libs/dto/booking/booking';
+import {
+	BookingsInquiry,
+	CreateBookingInput,
+	GetAgentBookingsInput,
+	UpdateBookingStatusInput,
+} from '../../libs/dto/booking/booking.input';
 import { Member } from '../../libs/dto/member/member';
 import { Service } from '../../libs/dto/service/service';
 import { BookingStatus } from '../../libs/enums/booking-status.enum';
 import { Message } from '../../libs/enums/common.enum';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
+import { AuthMemberPayload } from '../../libs/types/auth';
+
+type BookingsAggregateResult = {
+	list: Booking[];
+	metaCounter: Array<{ total: number }>;
+};
+
+const BOOKING_STATUS_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
+	[BookingStatus.PENDING]: [BookingStatus.CONFIRMED, BookingStatus.CANCELED],
+	[BookingStatus.CONFIRMED]: [BookingStatus.IN_PROGRESS, BookingStatus.CANCELED],
+	[BookingStatus.IN_PROGRESS]: [BookingStatus.COMPLETED, BookingStatus.CANCELED],
+	[BookingStatus.COMPLETED]: [],
+	[BookingStatus.CANCELED]: [],
+};
 
 @Injectable()
 export class BookingService {
@@ -19,17 +38,7 @@ export class BookingService {
 	) {}
 
 	public async createBooking(customerId: string, input: CreateBookingInput): Promise<Booking> {
-		const customer = await this.memberModel
-			.findById(customerId)
-			.select({ memberStatus: 1, memberType: 1 })
-			.lean()
-			.exec();
-		if (!customer || customer.memberStatus === MemberStatus.DELETED) {
-			throw new NotFoundException(Message.NO_DATA_FOUND);
-		}
-		if (customer.memberStatus === MemberStatus.BLOCKED) {
-			throw new ForbiddenException(Message.BLOCKED_USER);
-		}
+		await this.ensureAccessibleMember(customerId);
 
 		const service = await this.serviceModel
 			.findById(input.serviceId)
@@ -55,13 +64,7 @@ export class BookingService {
 			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 		}
 
-		const agent = await this.memberModel.findById(agentId).select({ memberStatus: 1, memberType: 1 }).lean().exec();
-		if (!agent || agent.memberStatus === MemberStatus.DELETED) {
-			throw new NotFoundException(Message.NO_DATA_FOUND);
-		}
-		if (agent.memberStatus === MemberStatus.BLOCKED) {
-			throw new ForbiddenException(Message.BLOCKED_USER);
-		}
+		const agent = await this.ensureAccessibleMember(agentId);
 		if (![MemberType.AGENT, MemberType.ADMIN].includes(agent.memberType)) {
 			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 		}
@@ -88,5 +91,173 @@ export class BookingService {
 			console.log('Error, Booking.createBooking:', errMessage);
 			throw new BadRequestException(Message.CREATE_FAILED);
 		}
+	}
+
+	public async getMyBookings(customerId: string, input?: BookingsInquiry): Promise<BookingsResult> {
+		await this.ensureAccessibleMember(customerId);
+		return this.getBookingsByFilter({ customerId }, input);
+	}
+
+	public async getAgentBookings(authMember: AuthMemberPayload, input?: GetAgentBookingsInput): Promise<BookingsResult> {
+		const targetAgentId =
+			authMember.memberType === MemberType.ADMIN ? (input?.targetAgentId ?? authMember._id) : authMember._id;
+
+		const agent = await this.ensureAccessibleMember(targetAgentId);
+		if (![MemberType.AGENT, MemberType.ADMIN].includes(agent.memberType)) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		return this.getBookingsByFilter({ agentId: targetAgentId }, input);
+	}
+
+	public async updateBookingStatus(authMember: AuthMemberPayload, input: UpdateBookingStatusInput): Promise<Booking> {
+		const booking = await this.bookingModel.findById(input.bookingId).exec();
+		if (!booking) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		const isAdmin = authMember.memberType === MemberType.ADMIN;
+		const isAgentOwner = String(booking.agentId) === authMember._id;
+		if (!isAdmin && !isAgentOwner) {
+			throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+		}
+
+		if (booking.bookingStatus === input.bookingStatus) {
+			return booking as Booking;
+		}
+
+		const allowedNextStatuses = BOOKING_STATUS_TRANSITIONS[booking.bookingStatus] ?? [];
+		if (!allowedNextStatuses.includes(input.bookingStatus)) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		if (input.bookingStatus === BookingStatus.CANCELED && !input.canceledReason?.trim()) {
+			throw new BadRequestException(Message.BAD_REQUEST);
+		}
+
+		const updatePayload: Record<string, unknown> = {
+			bookingStatus: input.bookingStatus,
+		};
+
+		if (typeof input.quotedPrice === 'number') {
+			updatePayload.quotedPrice = input.quotedPrice;
+		}
+
+		if (typeof input.finalPrice === 'number') {
+			updatePayload.finalPrice = input.finalPrice;
+		}
+
+		if (input.bookingStatus === BookingStatus.CANCELED) {
+			updatePayload.canceledReason = input.canceledReason?.trim();
+			updatePayload.completedAt = null;
+		}
+
+		if (input.bookingStatus === BookingStatus.COMPLETED) {
+			updatePayload.completedAt = new Date();
+		}
+
+		if (input.bookingStatus !== BookingStatus.CANCELED && typeof input.canceledReason === 'undefined') {
+			updatePayload.canceledReason = null;
+		}
+
+		try {
+			const updatedBooking = await this.bookingModel
+				.findByIdAndUpdate(input.bookingId, { $set: updatePayload }, { new: true, runValidators: true })
+				.exec();
+
+			if (!updatedBooking) {
+				throw new NotFoundException(Message.NO_DATA_FOUND);
+			}
+
+			return updatedBooking as Booking;
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Error, Booking.updateBookingStatus:', errMessage);
+			throw new BadRequestException(Message.UPDATE_FAILED);
+		}
+	}
+
+	private async getBookingsByFilter(
+		baseFilter: { customerId?: string; agentId?: string },
+		input?: BookingsInquiry,
+	): Promise<BookingsResult> {
+		const filter: Record<string, unknown> = { ...baseFilter };
+		if (input?.bookingStatus) {
+			filter.bookingStatus = input.bookingStatus;
+		}
+
+		const page = input?.page && input.page > 0 ? input.page : 1;
+		const limit = input?.limit && input.limit > 0 ? Math.min(input.limit, 100) : 20;
+
+		const data = await this.bookingModel
+			.aggregate<BookingsAggregateResult>([
+				{ $match: filter },
+				{ $sort: { createdAt: -1 } },
+				{
+					$facet: {
+						list: [
+							{ $skip: (page - 1) * limit },
+							{ $limit: limit },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'customerId',
+									foreignField: '_id',
+									as: 'customerData',
+								},
+							},
+							{ $unwind: { path: '$customerData', preserveNullAndEmptyArrays: true } },
+							{
+								$lookup: {
+									from: 'members',
+									localField: 'agentId',
+									foreignField: '_id',
+									as: 'agentData',
+								},
+							},
+							{ $unwind: { path: '$agentData', preserveNullAndEmptyArrays: true } },
+							{
+								$lookup: {
+									from: 'services',
+									localField: 'serviceId',
+									foreignField: '_id',
+									as: 'serviceData',
+								},
+							},
+							{ $unwind: { path: '$serviceData', preserveNullAndEmptyArrays: true } },
+							{ $project: { 'serviceData.embedding': 0 } },
+						],
+						metaCounter: [{ $count: 'total' }],
+					},
+				},
+			])
+			.exec();
+
+		const totalCount = data[0]?.metaCounter?.[0]?.total ?? 0;
+		const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+		return {
+			list: data[0]?.list ?? [],
+			meta: {
+				totalCount,
+				page,
+				limit,
+				totalPages,
+				hasNextPage: totalPages > 0 && page < totalPages,
+				hasPrevPage: page > 1 && totalPages > 0,
+			},
+		};
+	}
+
+	private async ensureAccessibleMember(memberId: string): Promise<Pick<Member, 'memberStatus' | 'memberType'>> {
+		const member = await this.memberModel.findById(memberId).select({ memberStatus: 1, memberType: 1 }).lean().exec();
+		if (!member || member.memberStatus === MemberStatus.DELETED) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+		if (member.memberStatus === MemberStatus.BLOCKED) {
+			throw new ForbiddenException(Message.BLOCKED_USER);
+		}
+
+		return member;
 	}
 }

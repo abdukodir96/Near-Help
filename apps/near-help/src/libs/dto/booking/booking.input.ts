@@ -79,6 +79,14 @@ export class BookingsInquiry {
 }
 
 @InputType()
+export class GetAgentBookingsInput extends BookingsInquiry {
+	@IsOptional()
+	@IsMongoId()
+	@Field(() => String, { nullable: true })
+	targetAgentId?: string;
+}
+
+@InputType()
 export class UpdateBookingStatusInput {
 	@IsNotEmpty()
 	@IsMongoId()
