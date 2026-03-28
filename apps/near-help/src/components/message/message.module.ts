@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import MessageThreadSchema from '../../schemas/MessageThread.model';
 import MessageSchema from '../../schemas/Message.model';
@@ -20,7 +20,7 @@ import { MessageService } from './message.service';
 			{ name: 'Service', schema: ServiceSchema },
 		]),
 		AuthModule,
-		SocketModule,
+		forwardRef(() => SocketModule),
 	],
 	providers: [MessageResolver, MessageService, AuthGuard, RolesGuard],
 	exports: [MessageService],

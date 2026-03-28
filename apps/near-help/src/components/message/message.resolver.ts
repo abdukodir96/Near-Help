@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
@@ -6,8 +6,13 @@ import { Roles } from '../../libs/decorators/roles.decorators';
 import { MemberType } from '../../libs/enums/member.enum';
 import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { MessageService } from './message.service';
-import { CreateOrGetThreadInput, SendMessageInput } from '../../libs/dto/message/message.input';
-import { MessageThread, Message } from '../../libs/dto/message/message';
+import {
+	CreateOrGetThreadInput,
+	MessageThreadsInquiry,
+	SendMessageInput,
+	ThreadMessagesInquiry,
+} from '../../libs/dto/message/message.input';
+import { MessageThread, Message, MessageThreadsResult, MessagesResult } from '../../libs/dto/message/message';
 import type { AuthMemberPayload } from '../../libs/types/auth';
 
 @Resolver()
@@ -33,5 +38,25 @@ export class MessageResolver {
 	): Promise<Message> {
 		console.log('Mutation: sendMessage');
 		return this.messageService.sendMessage(authMember, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Query(() => MessageThreadsResult)
+	public async getMyThreads(
+		@AuthMember('_id') memberId: string,
+		@Args('input', { nullable: true }) input?: MessageThreadsInquiry,
+	): Promise<MessageThreadsResult> {
+		console.log('Query: getMyThreads');
+		return this.messageService.getMyThreads(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Query(() => MessagesResult)
+	public async getThreadMessages(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: ThreadMessagesInquiry,
+	): Promise<MessagesResult> {
+		console.log('Query: getThreadMessages');
+		return this.messageService.getThreadMessages(memberId, input);
 	}
 }

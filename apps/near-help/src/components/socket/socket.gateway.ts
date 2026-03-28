@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { forwardRef, Inject, Logger } from '@nestjs/common';
 import {
 	MessageBody,
 	OnGatewayConnection,
@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
 import { Message } from '../../libs/enums/common.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
+import { MessageService } from '../message/message.service';
 
 type SocketRoomPayload = {
 	room: string;
@@ -37,6 +38,16 @@ type RoomStatusPayload = {
 	memberId: string;
 };
 
+type ThreadSocketPayload = {
+	threadId: string;
+};
+
+type ThreadJoinStatusPayload = {
+	threadId: string;
+	memberId: string;
+	unreadCount: number;
+};
+
 @WebSocketGateway({
 	cors: {
 		origin: true,
@@ -51,7 +62,10 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@WebSocketServer()
 	server!: Server;
 
-	constructor(private readonly authService: AuthService) {}
+	constructor(
+		private readonly authService: AuthService,
+		@Inject(forwardRef(() => MessageService)) private readonly messageService: MessageService,
+	) {}
 
 	public afterInit(): void {
 		this.logger.verbose(`Socket server initialized. Total clients [${this.getTotalClients()}]`);
@@ -127,6 +141,41 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		} satisfies RoomStatusPayload);
 	}
 
+	@SubscribeMessage('thread:join')
+	public async handleJoinThread(client: Socket, @MessageBody() payload: ThreadSocketPayload): Promise<void> {
+		const authMember = this.getClientAuthMember(client);
+		if (!payload?.threadId?.trim()) return;
+
+		try {
+			const threadId = payload.threadId.trim();
+			await client.join(this.getThreadRoom(threadId));
+			const readReceipt = await this.messageService.markThreadAsRead(authMember._id, threadId);
+
+			client.emit('thread:joined', {
+				threadId,
+				memberId: authMember._id,
+				unreadCount: readReceipt.unreadCount,
+			} satisfies ThreadJoinStatusPayload);
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : Message.SOMETHING_WENT_WRONG;
+			client.emit('thread:error', { message });
+		}
+	}
+
+	@SubscribeMessage('thread:leave')
+	public async handleLeaveThread(client: Socket, @MessageBody() payload: ThreadSocketPayload): Promise<void> {
+		const authMember = this.getClientAuthMember(client);
+		if (!payload?.threadId?.trim()) return;
+
+		const threadId = payload.threadId.trim();
+		await client.leave(this.getThreadRoom(threadId));
+		client.emit('thread:left', {
+			threadId,
+			memberId: authMember._id,
+			unreadCount: 0,
+		} satisfies ThreadJoinStatusPayload);
+	}
+
 	public emitToUser(memberId: string, event: string, payload: unknown): void {
 		this.server.to(this.getUserRoom(memberId)).emit(event, payload);
 	}
@@ -181,6 +230,10 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 	private getUserRoom(memberId: string): string {
 		return `user:${memberId}`;
+	}
+
+	private getThreadRoom(threadId: string): string {
+		return `thread:${threadId}`;
 	}
 
 	private getClientAuthMember(client: Socket): AuthMemberPayload {
