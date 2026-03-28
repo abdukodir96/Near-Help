@@ -12,6 +12,7 @@ import { SocketModule } from './socket/socket.module';
 import { AiModule } from './ai/ai.module';
 import { BookingModule } from './booking/booking.module';
 import { MessageModule } from './message/message.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
 	imports: [
@@ -26,6 +27,7 @@ import { MessageModule } from './message/message.module';
 		CommentModule,
 		FollowModule,
 		MessageModule,
+		NotificationModule,
 		SocketModule,
 		AiModule,
 	],

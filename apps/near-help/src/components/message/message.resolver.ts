@@ -8,11 +8,18 @@ import { AuthMember } from '../../libs/decorators/authMember.decorators';
 import { MessageService } from './message.service';
 import {
 	CreateOrGetThreadInput,
+	MarkThreadAsReadInput,
 	MessageThreadsInquiry,
 	SendMessageInput,
 	ThreadMessagesInquiry,
 } from '../../libs/dto/message/message.input';
-import { MessageThread, Message, MessageThreadsResult, MessagesResult } from '../../libs/dto/message/message';
+import {
+	MessageThread,
+	Message,
+	MessageThreadsResult,
+	MessagesResult,
+	ThreadReadReceipt,
+} from '../../libs/dto/message/message';
 import type { AuthMemberPayload } from '../../libs/types/auth';
 
 @Resolver()
@@ -58,5 +65,15 @@ export class MessageResolver {
 	): Promise<MessagesResult> {
 		console.log('Query: getThreadMessages');
 		return this.messageService.getThreadMessages(memberId, input);
+	}
+
+	@UseGuards(AuthGuard)
+	@Mutation(() => ThreadReadReceipt)
+	public async markThreadAsRead(
+		@AuthMember('_id') memberId: string,
+		@Args('input') input: MarkThreadAsReadInput,
+	): Promise<ThreadReadReceipt> {
+		console.log('Mutation: markThreadAsRead');
+		return this.messageService.markThreadAsRead(memberId, input.threadId);
 	}
 }

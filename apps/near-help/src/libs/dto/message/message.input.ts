@@ -70,3 +70,11 @@ export class ThreadMessagesInquiry {
 	@Field(() => Int)
 	limit!: number;
 }
+
+@InputType()
+export class MarkThreadAsReadInput {
+	@IsNotEmpty()
+	@IsMongoId()
+	@Field(() => String)
+	threadId!: string;
+}

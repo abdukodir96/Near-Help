@@ -27,6 +27,8 @@ import { MessageStatus, MessageThreadStatus, MessageType } from '../../libs/enum
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import type { AuthMemberPayload } from '../../libs/types/auth';
+import { ThreadReadReceipt } from '../../libs/dto/message/message';
+import { NotificationService } from '../notification/notification.service';
 import { SocketGateway } from '../socket/socket.gateway';
 
 type ThreadAccess = {
@@ -46,15 +48,6 @@ type ThreadMessagesAggregateResult = {
 	metaCounter: Array<{ total: number }>;
 };
 
-export type ThreadReadReceipt = {
-	threadId: string;
-	memberId: string;
-	otherMemberId: string;
-	unreadCount: number;
-	readAt: string;
-	markedCount: number;
-};
-
 @Injectable()
 export class MessageService {
 	constructor(
@@ -63,6 +56,7 @@ export class MessageService {
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
 		@Inject(forwardRef(() => SocketGateway)) private readonly socketGateway: SocketGateway,
+		@Inject(forwardRef(() => NotificationService)) private readonly notificationService: NotificationService,
 	) {}
 
 	public async createOrGetThread(authMember: AuthMemberPayload, input: CreateOrGetThreadInput): Promise<MessageThread> {
@@ -175,6 +169,13 @@ export class MessageService {
 			this.socketGateway.emitToUser(receiverId, 'message:new', emittedPayload);
 			this.socketGateway.emitToUser(senderId, 'message:new', emittedPayload);
 			this.socketGateway.emitToRoom(this.getThreadRoom(String(threadAccess.thread._id)), 'message:new', emittedPayload);
+			await this.createMessageNotificationSafely({
+				authorId: senderId,
+				receiverId,
+				threadId: String(threadAccess.thread._id),
+				serviceId: threadAccess.thread.serviceId ? String(threadAccess.thread.serviceId) : undefined,
+				messageText: normalizedText,
+			});
 
 			return createdMessage as MessageEntity;
 		} catch (err: unknown) {
@@ -328,6 +329,7 @@ export class MessageService {
 					},
 				)
 				.exec();
+			await this.markMessageNotificationsAsReadSafely(memberId, String(threadAccess.thread._id));
 
 			const payload = {
 				threadId: String(threadAccess.thread._id),
@@ -459,5 +461,29 @@ export class MessageService {
 
 	private toObjectId(value: string): Types.ObjectId {
 		return new Types.ObjectId(value);
+	}
+
+	private async createMessageNotificationSafely(input: {
+		authorId: string;
+		receiverId: string;
+		threadId: string;
+		serviceId?: string;
+		messageText: string;
+	}): Promise<void> {
+		try {
+			await this.notificationService.createMessageNotification(input);
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Warning, Message.createMessageNotificationSafely:', errMessage);
+		}
+	}
+
+	private async markMessageNotificationsAsReadSafely(receiverId: string, threadId: string): Promise<void> {
+		try {
+			await this.notificationService.markMessageNotificationsAsRead(receiverId, threadId);
+		} catch (err: unknown) {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Warning, Message.markMessageNotificationsAsReadSafely:', errMessage);
+		}
 	}
 }

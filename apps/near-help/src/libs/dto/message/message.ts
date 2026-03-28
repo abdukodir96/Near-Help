@@ -121,3 +121,24 @@ export class MessagesResult {
 	@Field(() => PaginationMeta)
 	meta!: PaginationMeta;
 }
+
+@ObjectType()
+export class ThreadReadReceipt {
+	@Field(() => String)
+	threadId!: string;
+
+	@Field(() => String)
+	memberId!: string;
+
+	@Field(() => String)
+	otherMemberId!: string;
+
+	@Field(() => Int)
+	unreadCount!: number;
+
+	@Field(() => String)
+	readAt!: string;
+
+	@Field(() => Int)
+	markedCount!: number;
+}
