@@ -11,6 +11,7 @@ import { UploadModule } from './upload/upload.module';
 import { SocketModule } from './socket/socket.module';
 import { AiModule } from './ai/ai.module';
 import { BookingModule } from './booking/booking.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
 	imports: [
@@ -24,6 +25,7 @@ import { BookingModule } from './booking/booking.module';
 		UploadModule,
 		CommentModule,
 		FollowModule,
+		MessageModule,
 		SocketModule,
 		AiModule,
 	],
