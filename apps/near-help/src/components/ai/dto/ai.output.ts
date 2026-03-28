@@ -1,4 +1,5 @@
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import { ServicesResult } from '../../../libs/dto/service/service';
 
 @ObjectType()
 export class PriceEstimate {
@@ -19,4 +20,19 @@ export class PriceEstimate {
 
 	@Field(() => String)
 	disclaimer!: string;
+}
+
+@ObjectType()
+export class BookingAssistantResult {
+	@Field(() => PriceEstimate)
+	priceEstimate!: PriceEstimate;
+
+	@Field(() => ServicesResult)
+	recommendedServices!: ServicesResult;
+
+	@Field(() => String)
+	summary!: string;
+
+	@Field(() => String)
+	nextAction!: string;
 }

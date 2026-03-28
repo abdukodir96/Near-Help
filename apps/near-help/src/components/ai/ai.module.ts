@@ -12,6 +12,7 @@ import { AuthGuard } from '../../libs/guards/auth.guard';
 import { RolesGuard } from '../../libs/guards/roles.guard';
 import { AiEmbeddingService } from './embeddings/ai-embedding.service';
 import { AiRecommendationService } from './recommendation/ai-recommendation.service';
+import { AiBookingAssistantService } from './booking/ai-booking-assistant.service';
 
 @Module({
 	imports: [ConfigModule, AuthModule, MongooseModule.forFeature([{ name: 'Service', schema: ServiceSchema }])],
@@ -22,10 +23,11 @@ import { AiRecommendationService } from './recommendation/ai-recommendation.serv
 		AiPricingService,
 		AiEmbeddingService,
 		AiRecommendationService,
+		AiBookingAssistantService,
 		OptionalAuthGuard,
 		AuthGuard,
 		RolesGuard,
 	],
-	exports: [AiService, AiPricingService, AiEmbeddingService, AiRecommendationService],
+	exports: [AiService, AiPricingService, AiEmbeddingService, AiRecommendationService, AiBookingAssistantService],
 })
 export class AiModule {}

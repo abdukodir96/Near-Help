@@ -136,3 +136,56 @@ export class SyncServiceEmbeddingsInput {
 	@Field(() => Int, { nullable: true })
 	limit?: number;
 }
+
+@InputType()
+export class RecommendAndEstimateServicesInput {
+	@IsString()
+	@Length(10, 1200)
+	@Field(() => String)
+	problemDescription!: string;
+
+	@IsEnum(ServiceCategory)
+	@Field(() => ServiceCategory)
+	serviceCategory!: ServiceCategory;
+
+	@IsOptional()
+	@IsEnum(ServiceOption)
+	@Field(() => ServiceOption, { nullable: true })
+	serviceOption?: ServiceOption;
+
+	@IsOptional()
+	@IsEnum(ServiceLocation)
+	@Field(() => ServiceLocation, { nullable: true })
+	serviceArea?: ServiceLocation;
+
+	@IsOptional()
+	@IsString()
+	@Length(3, 300)
+	@Field(() => String, { nullable: true })
+	urgencyNote?: string;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	budgetMin?: number;
+
+	@IsOptional()
+	@IsNumber({ maxDecimalPlaces: 2 })
+	@Min(0)
+	@Field(() => Float, { nullable: true })
+	budgetMax?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Field(() => Int, { nullable: true })
+	page?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Max(20)
+	@Field(() => Int, { nullable: true })
+	limit?: number;
+}
