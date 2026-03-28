@@ -34,4 +34,7 @@ const NoticeSchema = new Schema(
 	{ timestamps: true, collection: 'notices' },
 );
 
+NoticeSchema.index({ noticeStatus: 1, noticeCategory: 1, createdAt: -1 });
+NoticeSchema.index({ memberId: 1, createdAt: -1 });
+
 export default NoticeSchema;

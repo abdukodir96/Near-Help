@@ -13,6 +13,8 @@ import { AiModule } from './ai/ai.module';
 import { BookingModule } from './booking/booking.module';
 import { MessageModule } from './message/message.module';
 import { NotificationModule } from './notification/notification.module';
+import { MailModule } from './mail/mail.module';
+import { NoticeModule } from './notice/notice.module';
 
 @Module({
 	imports: [
@@ -28,6 +30,8 @@ import { NotificationModule } from './notification/notification.module';
 		FollowModule,
 		MessageModule,
 		NotificationModule,
+		MailModule,
+		NoticeModule,
 		SocketModule,
 		AiModule,
 	],

@@ -15,11 +15,18 @@ import { Message } from '../../libs/enums/common.enum';
 import { MemberStatus, MemberType } from '../../libs/enums/member.enum';
 import { ServiceStatus } from '../../libs/enums/service.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
+import { MailService } from '../mail/mail.service';
 import { NotificationService } from '../notification/notification.service';
 
 type BookingsAggregateResult = {
 	list: Booking[];
 	metaCounter: Array<{ total: number }>;
+};
+
+type BookingMailRecipient = {
+	memberEmail?: string;
+	memberFullName?: string;
+	memberNick: string;
 };
 
 const BOOKING_STATUS_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
@@ -36,6 +43,7 @@ export class BookingService {
 		@InjectModel('Booking') private readonly bookingModel: Model<Booking>,
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		@InjectModel('Service') private readonly serviceModel: Model<Service>,
+		private readonly mailService: MailService,
 		private readonly notificationService: NotificationService,
 	) {}
 
@@ -85,6 +93,17 @@ export class BookingService {
 				bookingAddress: input.bookingAddress,
 				bookingArea: input.bookingArea ?? service.serviceArea,
 				bookingNote: input.bookingNote,
+			});
+
+			const customerMailRecipient = await this.getBookingMailRecipient(customerId);
+			this.dispatchBookingCreatedEmail({
+				to: customerMailRecipient.memberEmail,
+				recipientName: customerMailRecipient.memberFullName ?? customerMailRecipient.memberNick,
+				serviceTitle: createdBooking.serviceTitleSnapshot,
+				bookingDate: createdBooking.bookingDate,
+				bookingTime: createdBooking.bookingTime,
+				bookingAddress: createdBooking.bookingAddress,
+				bookingNote: createdBooking.bookingNote,
 			});
 
 			return createdBooking as Booking;
@@ -180,6 +199,20 @@ export class BookingService {
 				serviceTitleSnapshot: updatedBooking.serviceTitleSnapshot,
 			});
 
+			const customerMailRecipient = await this.getBookingMailRecipient(String(updatedBooking.customerId));
+			this.dispatchBookingStatusEmail({
+				to: customerMailRecipient.memberEmail,
+				recipientName: customerMailRecipient.memberFullName ?? customerMailRecipient.memberNick,
+				serviceTitle: updatedBooking.serviceTitleSnapshot,
+				bookingStatus: updatedBooking.bookingStatus,
+				bookingDate: updatedBooking.bookingDate,
+				bookingTime: updatedBooking.bookingTime,
+				bookingAddress: updatedBooking.bookingAddress,
+				canceledReason: updatedBooking.canceledReason,
+				quotedPrice: updatedBooking.quotedPrice,
+				finalPrice: updatedBooking.finalPrice,
+			});
+
 			return updatedBooking as Booking;
 		} catch (err: unknown) {
 			const errMessage = err instanceof Error ? err.message : String(err);
@@ -272,6 +305,20 @@ export class BookingService {
 		return member;
 	}
 
+	private async getBookingMailRecipient(memberId: string): Promise<BookingMailRecipient> {
+		const member = await this.memberModel
+			.findById(memberId)
+			.select({ memberEmail: 1, memberFullName: 1, memberNick: 1 })
+			.lean()
+			.exec();
+
+		if (!member) {
+			throw new NotFoundException(Message.NO_DATA_FOUND);
+		}
+
+		return member;
+	}
+
 	private async createBookingNotificationSafely(input: {
 		authorId: string;
 		receiverId: string;
@@ -286,5 +333,38 @@ export class BookingService {
 			const errMessage = err instanceof Error ? err.message : String(err);
 			console.log('Warning, Booking.createBookingNotificationSafely:', errMessage);
 		}
+	}
+
+	private dispatchBookingCreatedEmail(input: {
+		to?: string;
+		recipientName: string;
+		serviceTitle: string;
+		bookingDate: string;
+		bookingTime: string;
+		bookingAddress: string;
+		bookingNote?: string;
+	}): void {
+		void this.mailService.sendBookingCreatedEmail(input).catch((err: unknown) => {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Warning, Booking.dispatchBookingCreatedEmail:', errMessage);
+		});
+	}
+
+	private dispatchBookingStatusEmail(input: {
+		to?: string;
+		recipientName: string;
+		serviceTitle: string;
+		bookingStatus: BookingStatus;
+		bookingDate: string;
+		bookingTime: string;
+		bookingAddress: string;
+		canceledReason?: string;
+		quotedPrice?: number;
+		finalPrice?: number;
+	}): void {
+		void this.mailService.sendBookingStatusEmail(input).catch((err: unknown) => {
+			const errMessage = err instanceof Error ? err.message : String(err);
+			console.log('Warning, Booking.dispatchBookingStatusEmail:', errMessage);
+		});
 	}
 }
