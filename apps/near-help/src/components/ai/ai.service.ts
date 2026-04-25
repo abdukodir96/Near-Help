@@ -8,6 +8,9 @@ import {
 } from '@nestjs/common';
 import { OPENAI_PROVIDER_OPTIONS } from './providers/openai.provider';
 import type {
+	AnthropicMessagesResponse,
+	ChatCompletionMessage,
+	ChatCompletionResponse,
 	EmbeddingsApiResponse,
 	OpenAIProviderOptions,
 	ResponsesApiResponse,
@@ -118,6 +121,125 @@ export class AiService {
 		throw lastError instanceof Error
 			? new ServiceUnavailableException(lastError.message)
 			: new ServiceUnavailableException('OpenAI request failed.');
+	}
+
+	public getChatModel(): string {
+		return this.openAIOptions.chatModel;
+	}
+
+	public async createChatCompletion(messages: ChatCompletionMessage[]): Promise<string> {
+		const hasOpenRouter = Boolean(this.openAIOptions.openRouterApiKey);
+		const hasAnthropic = Boolean(this.openAIOptions.anthropicApiKey);
+
+		if (!hasOpenRouter && !hasAnthropic) {
+			throw new ServiceUnavailableException('No chat AI provider is configured (OPENROUTER_API_KEY or ANTHROPIC_API_KEY required).');
+		}
+
+		if (hasOpenRouter) {
+			try {
+				return await this.callOpenRouterChat(messages);
+			} catch (err: unknown) {
+				const reason = err instanceof Error ? err.message : String(err);
+				this.logger.warn(`OpenRouter chat failed, falling back to Anthropic. Reason: ${reason}`);
+
+				if (!hasAnthropic) {
+					throw new ServiceUnavailableException('Chat AI is temporarily unavailable.');
+				}
+			}
+		}
+
+		return this.callAnthropicChat(messages);
+	}
+
+	private async callOpenRouterChat(messages: ChatCompletionMessage[]): Promise<string> {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), this.openAIOptions.timeoutMs);
+
+		try {
+			const response = await fetch(`${this.openAIOptions.openRouterBaseUrl}/chat/completions`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${this.openAIOptions.openRouterApiKey}`,
+					'HTTP-Referer': 'https://nearhelp.com',
+					'X-Title': 'NearHelp',
+				},
+				body: JSON.stringify({
+					model: this.openAIOptions.openRouterChatModel,
+					messages,
+					max_tokens: 1000,
+				}),
+				signal: controller.signal,
+			});
+
+			const payload = await this.parseJsonResponse<ChatCompletionResponse>(response);
+			if (!response.ok) {
+				throw new ServiceUnavailableException(payload.error?.message ?? 'OpenRouter request failed.');
+			}
+
+			this.logChatUsage(payload, this.openAIOptions.openRouterChatModel);
+
+			const content = payload.choices?.[0]?.message?.content;
+			if (!content?.trim()) {
+				throw new ServiceUnavailableException('OpenRouter returned an empty response.');
+			}
+
+			return content.trim();
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name === 'AbortError') {
+				throw new ServiceUnavailableException('OpenRouter request timed out.');
+			}
+			throw err;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	private async callAnthropicChat(messages: ChatCompletionMessage[]): Promise<string> {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), this.openAIOptions.timeoutMs);
+
+		const systemMessage = messages.find((m) => m.role === 'system');
+		const conversationMessages = messages.filter((m) => m.role !== 'system');
+
+		try {
+			const response = await fetch(`${this.openAIOptions.anthropicBaseUrl}/messages`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': this.openAIOptions.anthropicApiKey,
+					'anthropic-version': this.openAIOptions.anthropicVersion,
+				},
+				body: JSON.stringify({
+					model: this.openAIOptions.anthropicChatModel,
+					max_tokens: 1000,
+					...(systemMessage ? { system: systemMessage.content } : {}),
+					messages: conversationMessages.map((m) => ({ role: m.role, content: m.content })),
+				}),
+				signal: controller.signal,
+			});
+
+			const payload = await this.parseJsonResponse<AnthropicMessagesResponse>(response);
+			if (!response.ok) {
+				throw new ServiceUnavailableException(payload.error?.message ?? 'Anthropic request failed.');
+			}
+
+			this.logAnthropicUsage(payload, this.openAIOptions.anthropicChatModel);
+
+			const text = payload.content?.find((c) => c.type === 'text')?.text;
+			if (!text?.trim()) {
+				throw new ServiceUnavailableException('Anthropic returned an empty response.');
+			}
+
+			return text.trim();
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name === 'AbortError') {
+				throw new ServiceUnavailableException('Anthropic request timed out.');
+			}
+			throw err instanceof Error ? new ServiceUnavailableException(err.message) : err;
+		} finally {
+			clearTimeout(timeout);
+		}
 	}
 
 	public async createEmbedding(input: string): Promise<number[]> {
@@ -261,6 +383,28 @@ export class AiService {
 
 		this.logger.log(
 			`OpenAI model=${model} input=${usage.input_tokens ?? 0} output=${usage.output_tokens ?? 0} total=${usage.total_tokens ?? 0}`,
+		);
+	}
+
+	private logAnthropicUsage(response: AnthropicMessagesResponse, model: string): void {
+		if (!this.openAIOptions.logEnabled) return;
+
+		const usage = response.usage;
+		if (!usage) return;
+
+		this.logger.log(
+			`Anthropic model=${model} input=${usage.input_tokens ?? 0} output=${usage.output_tokens ?? 0} total=${(usage.input_tokens ?? 0) + (usage.output_tokens ?? 0)}`,
+		);
+	}
+
+	private logChatUsage(response: ChatCompletionResponse, model: string): void {
+		if (!this.openAIOptions.logEnabled) return;
+
+		const usage = response.usage;
+		if (!usage) return;
+
+		this.logger.log(
+			`OpenAI chat model=${model} input=${usage.prompt_tokens ?? 0} output=${usage.completion_tokens ?? 0} total=${(usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0)}`,
 		);
 	}
 

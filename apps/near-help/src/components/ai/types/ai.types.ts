@@ -11,6 +11,15 @@ export type OpenAIProviderOptions = {
 	recommendationEnabled: boolean;
 	semanticCandidateLimit: number;
 	logEnabled: boolean;
+
+	openRouterBaseUrl: string;
+	openRouterApiKey: string;
+	openRouterChatModel: string;
+
+	anthropicBaseUrl: string;
+	anthropicApiKey: string;
+	anthropicChatModel: string;
+	anthropicVersion: string;
 };
 
 export type StructuredResponseRequest = {
@@ -51,6 +60,50 @@ export type EmbeddingsApiResponse = {
 	}>;
 	usage?: {
 		prompt_tokens?: number;
+		total_tokens?: number;
+	};
+	error?: {
+		message?: string;
+	};
+};
+
+export type AnthropicMessagesResponse = {
+	content?: Array<{
+		type?: string;
+		text?: string;
+	}>;
+	usage?: {
+		input_tokens?: number;
+		output_tokens?: number;
+	};
+	stop_reason?: string;
+	error?: {
+		message?: string;
+	};
+};
+
+export type ChatCompletionMessage = {
+	role: 'system' | 'user' | 'assistant';
+	content: string;
+};
+
+export type ChatCompletionRequest = {
+	model: string;
+	messages: ChatCompletionMessage[];
+	max_tokens?: number;
+};
+
+export type ChatCompletionResponse = {
+	choices?: Array<{
+		message?: {
+			role?: string;
+			content?: string;
+		};
+		finish_reason?: string;
+	}>;
+	usage?: {
+		prompt_tokens?: number;
+		completion_tokens?: number;
 		total_tokens?: number;
 	};
 	error?: {

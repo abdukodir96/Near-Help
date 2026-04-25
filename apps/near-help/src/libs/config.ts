@@ -34,6 +34,15 @@ export const aiConfig = {
 	recommendationEnabled: process.env.AI_RECOMMENDATION_ENABLED !== 'false',
 	semanticCandidateLimit: parsePositiveInt(process.env.AI_SEMANTIC_CANDIDATE_LIMIT, 300),
 	logEnabled: process.env.AI_LOG_ENABLED !== 'false',
+
+	openRouterBaseUrl: 'https://openrouter.ai/api/v1',
+	openRouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
+	openRouterChatModel: process.env.OPENROUTER_MODEL_CHAT ?? 'openai/gpt-4o-mini',
+
+	anthropicBaseUrl: 'https://api.anthropic.com/v1',
+	anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+	anthropicChatModel: process.env.ANTHROPIC_MODEL_CHAT ?? 'claude-3-5-haiku-20241022',
+	anthropicVersion: '2023-06-01',
 };
 
 export const availableCommentSorts = ['createdAt', 'updatedAt'] as const;

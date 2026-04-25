@@ -19,5 +19,14 @@ export const openAIProvider: Provider<OpenAIProviderOptions> = {
 		recommendationEnabled: aiConfig.recommendationEnabled,
 		semanticCandidateLimit: aiConfig.semanticCandidateLimit,
 		logEnabled: aiConfig.logEnabled,
+
+		openRouterBaseUrl: aiConfig.openRouterBaseUrl,
+		openRouterApiKey: aiConfig.openRouterApiKey,
+		openRouterChatModel: aiConfig.openRouterChatModel,
+
+		anthropicBaseUrl: aiConfig.anthropicBaseUrl,
+		anthropicApiKey: aiConfig.anthropicApiKey,
+		anthropicChatModel: aiConfig.anthropicChatModel,
+		anthropicVersion: aiConfig.anthropicVersion,
 	}),
 };
