@@ -12,6 +12,12 @@ type CreateGraphQLUploadMiddleware = (options: { maxFileSize: number; maxFiles: 
 
 async function bootstrap() {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule);
+	app.enableCors({
+		origin: ['http://localhost:3000', 'http://localhost:3001'],
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'Apollo-Require-Preflight'],
+	});
 	const createUploadMiddleware = graphqlUploadExpress as unknown as CreateGraphQLUploadMiddleware;
 	const uploadMiddleware = createUploadMiddleware({
 		maxFileSize: uploadConfig.maxImageBytes,
