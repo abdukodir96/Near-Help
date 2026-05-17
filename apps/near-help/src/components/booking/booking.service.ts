@@ -98,8 +98,10 @@ export class BookingService {
 			const customerMailRecipient = await this.getBookingMailRecipient(customerId);
 			this.dispatchBookingCreatedEmail({
 				to: customerMailRecipient.memberEmail,
+				bookingId: String(createdBooking._id),
 				recipientName: customerMailRecipient.memberFullName ?? customerMailRecipient.memberNick,
 				serviceTitle: createdBooking.serviceTitleSnapshot,
+				serviceCategory: createdBooking.serviceCategory,
 				bookingDate: createdBooking.bookingDate,
 				bookingTime: createdBooking.bookingTime,
 				bookingAddress: createdBooking.bookingAddress,
@@ -337,8 +339,10 @@ export class BookingService {
 
 	private dispatchBookingCreatedEmail(input: {
 		to?: string;
+		bookingId?: string;
 		recipientName: string;
 		serviceTitle: string;
+		serviceCategory?: string;
 		bookingDate: string;
 		bookingTime: string;
 		bookingAddress: string;
