@@ -176,7 +176,7 @@ export class MemberService {
 
 		try {
 			const updatedMember = await this.memberModel
-				.findByIdAndUpdate(memberId, { $set: payload }, { new: true, runValidators: true })
+				.findByIdAndUpdate(memberId, { $set: payload }, { new: true })
 				.exec();
 
 			if (!updatedMember) {
