@@ -205,7 +205,7 @@ export class MemberService {
 			throw new ForbiddenException(Message.BLOCKED_USER);
 		}
 
-		if (lookupMemberId !== memberId) {
+		if (lookupMemberId !== memberId && memberId) {
 			const createdView = await this.viewService.recordView({
 				memberId,
 				viewGroup: ViewGroup.MEMBER,

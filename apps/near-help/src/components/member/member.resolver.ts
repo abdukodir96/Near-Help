@@ -78,7 +78,7 @@ export class MemberResolver {
 		return `Admin role verified for member id: ${memberId}`;
 	}
 
-	@UseGuards(AuthGuard)
+	@UseGuards(OptionalAuthGuard)
 	@Query(() => MemberPrivate)
 	public async getMember(
 		@AuthMember('_id') memberId: string,
