@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
     ports:
-      - "3007:3007"
+      - "5002:3007"
     volumes:
       - ./uploads:/app/uploads
 
@@ -23,4 +23,4 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "5001:3000"
