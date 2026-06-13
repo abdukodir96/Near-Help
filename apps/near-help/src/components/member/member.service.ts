@@ -25,7 +25,8 @@ import { AuthResponse, AuthTokens, LogoutResponse } from '../../libs/dto/auth/au
 import { LogoutInput, RefreshTokenInput } from '../../libs/dto/auth/auth.input';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
-import { lookupAuthMemberFollowed } from '../../libs/config';
+import { lookupAuthMemberFollowed, lookupAuthMemberLiked } from '../../libs/config';
+import { LikeGroup } from '../../libs/enums/like.enum';
 import { AuthMemberPayload } from '../../libs/types/auth';
 
 type AgentsAggregateResult = {
@@ -247,7 +248,12 @@ export class MemberService {
 				{ $sort: sort },
 				{
 					$facet: {
-						list: [{ $skip: (page - 1) * limit }, { $limit: limit }, ...lookupAuthMemberFollowed(authMember?._id)],
+						list: [
+							{ $skip: (page - 1) * limit },
+							{ $limit: limit },
+							...lookupAuthMemberFollowed(authMember?._id),
+							...lookupAuthMemberLiked(authMember?._id, LikeGroup.MEMBER),
+						],
 						metaCounter: [{ $count: 'total' }],
 					},
 				},

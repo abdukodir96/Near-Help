@@ -65,6 +65,9 @@ export class Member {
 	@Field(() => Boolean, { nullable: true })
 	meFollowed?: boolean;
 
+	@Field(() => Boolean, { nullable: true })
+	meLiked?: boolean;
+
 	@Field(() => Int)
 	memberWarnings!: number;
 
