@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+    container_name: nearhelp-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3007:3007"
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ../nearhelp-frontend
+      args:
+        NEXT_PUBLIC_GRAPHQL_URL: ${NEXT_PUBLIC_GRAPHQL_URL}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
+    container_name: nearhelp-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
