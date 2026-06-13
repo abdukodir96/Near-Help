@@ -20,6 +20,8 @@ services:
         NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL}
     container_name: nearhelp-frontend
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - backend
     ports:
