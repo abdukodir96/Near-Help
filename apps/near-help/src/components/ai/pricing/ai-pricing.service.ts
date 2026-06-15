@@ -22,7 +22,7 @@ export class AiPricingService {
 	constructor(private readonly aiService: AiService) {}
 
 	public async estimateServicePrice(input: EstimateServicePriceInput): Promise<PriceEstimate> {
-		if (!this.aiService.isPricingEnabled()) {
+		if (!this.aiService.isPricingEnabled() || !this.aiService.hasPricingProvider()) {
 			throw new ServiceUnavailableException('AI pricing is currently disabled.');
 		}
 

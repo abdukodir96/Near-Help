@@ -38,6 +38,10 @@ export class AiService {
 		return Boolean(this.openAIOptions.apiKey);
 	}
 
+	public hasPricingProvider(): boolean {
+		return Boolean(this.openAIOptions.apiKey) || Boolean(this.openAIOptions.openRouterApiKey);
+	}
+
 	public isPricingEnabled(): boolean {
 		return this.openAIOptions.pricingEnabled;
 	}
@@ -63,10 +67,18 @@ export class AiService {
 	}
 
 	public async createStructuredResponse<T>(request: StructuredResponseRequest): Promise<T> {
-		if (!this.openAIOptions.apiKey) {
-			throw new ServiceUnavailableException('OPENAI_API_KEY is not configured.');
+		if (this.openAIOptions.apiKey) {
+			return this.createStructuredResponseViaOpenAI<T>(request);
 		}
 
+		if (this.openAIOptions.openRouterApiKey) {
+			return this.createStructuredResponseViaOpenRouter<T>(request);
+		}
+
+		throw new ServiceUnavailableException('No structured-response AI provider is configured.');
+	}
+
+	private async createStructuredResponseViaOpenAI<T>(request: StructuredResponseRequest): Promise<T> {
 		const requestBody = {
 			model: request.model,
 			input: [
@@ -121,6 +133,86 @@ export class AiService {
 		throw lastError instanceof Error
 			? new ServiceUnavailableException(lastError.message)
 			: new ServiceUnavailableException('OpenAI request failed.');
+	}
+
+	private async createStructuredResponseViaOpenRouter<T>(request: StructuredResponseRequest): Promise<T> {
+		const model = this.openAIOptions.openRouterChatModel;
+		const requestBody = {
+			model,
+			messages: [
+				{ role: 'system', content: request.systemPrompt },
+				{ role: 'user', content: request.userPrompt },
+			],
+			response_format: {
+				type: 'json_schema',
+				json_schema: {
+					name: request.schemaName,
+					schema: request.schema,
+					strict: true,
+				},
+			},
+			max_tokens: 1000,
+		};
+
+		const maxAttempts = 1 + Math.max(0, this.openAIOptions.maxRetries);
+		let lastError: unknown;
+
+		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				const response = await this.performOpenRouterChatRequest(requestBody);
+				this.logChatUsage(response, model);
+
+				const content = response.choices?.[0]?.message?.content;
+				if (!content?.trim()) {
+					throw new ServiceUnavailableException('OpenRouter returned an empty response.');
+				}
+
+				return JSON.parse(content.trim()) as T;
+			} catch (err: unknown) {
+				lastError = err;
+				if (attempt === maxAttempts || err instanceof HttpException) {
+					throw err;
+				}
+			}
+		}
+
+		throw lastError instanceof Error
+			? new ServiceUnavailableException(lastError.message)
+			: new ServiceUnavailableException('OpenRouter request failed.');
+	}
+
+	private async performOpenRouterChatRequest(body: Record<string, unknown>): Promise<ChatCompletionResponse> {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), this.openAIOptions.timeoutMs);
+
+		try {
+			const response = await fetch(`${this.openAIOptions.openRouterBaseUrl}/chat/completions`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${this.openAIOptions.openRouterApiKey}`,
+					'HTTP-Referer': 'https://nearhelps.com',
+					'X-Title': 'NearHelp',
+				},
+				body: JSON.stringify(body),
+				signal: controller.signal,
+			});
+
+			const payload = await this.parseJsonResponse<ChatCompletionResponse>(response);
+			if (!response.ok) {
+				throw new ServiceUnavailableException(payload.error?.message ?? 'OpenRouter request failed.');
+			}
+
+			return payload;
+		} catch (err: unknown) {
+			if (err instanceof Error && err.name === 'AbortError') {
+				throw new ServiceUnavailableException('OpenRouter request timed out.');
+			}
+
+			throw err instanceof Error ? new ServiceUnavailableException(err.message) : err;
+		} finally {
+			clearTimeout(timeout);
+		}
 	}
 
 	public getChatModel(): string {

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { BookingAssistantResult, PriceEstimate } from '../dto/ai.output';
 import { RecommendAndEstimateServicesInput } from '../dto/ai.input';
 import { AiPricingService } from '../pricing/ai-pricing.service';
@@ -34,16 +34,7 @@ export class AiBookingAssistantService {
 			urgencyNote: input.urgencyNote,
 		});
 
-		const recommendedServices = await this.aiRecommendationService.recommendServices(authMember, {
-			problemDescription: input.problemDescription,
-			serviceCategory: input.serviceCategory,
-			serviceOption: input.serviceOption,
-			serviceArea: input.serviceArea,
-			minPrice: input.budgetMin,
-			maxPrice: input.budgetMax,
-			page: input.page,
-			limit: input.limit,
-		});
+		const recommendedServices = await this.recommendServicesOrEmpty(authMember, input);
 
 		return {
 			priceEstimate,
@@ -51,6 +42,35 @@ export class AiBookingAssistantService {
 			summary: this.buildSummary(priceEstimate, recommendedServices),
 			nextAction: this.buildNextAction(recommendedServices),
 		};
+	}
+
+	private async recommendServicesOrEmpty(
+		authMember: AuthMemberPayload | null,
+		input: RecommendAndEstimateServicesInput,
+	): Promise<ServicesResult> {
+		try {
+			return await this.aiRecommendationService.recommendServices(authMember, {
+				problemDescription: input.problemDescription,
+				serviceCategory: input.serviceCategory,
+				serviceOption: input.serviceOption,
+				serviceArea: input.serviceArea,
+				minPrice: input.budgetMin,
+				maxPrice: input.budgetMax,
+				page: input.page,
+				limit: input.limit,
+			});
+		} catch (err: unknown) {
+			if (err instanceof ServiceUnavailableException) {
+				const page = input.page && input.page > 0 ? input.page : 1;
+				const limit = input.limit && input.limit > 0 ? Math.min(input.limit, 50) : 10;
+				return {
+					list: [],
+					meta: { totalCount: 0, page, limit, totalPages: 0, hasNextPage: false, hasPrevPage: false },
+				};
+			}
+
+			throw err;
+		}
 	}
 
 	private buildSummary(priceEstimate: PriceEstimate, recommendedServices: ServicesResult): string {
