@@ -11,8 +11,12 @@ const AiChatSessionSchema = new Schema(
 
 		memberId: {
 			type: Schema.Types.ObjectId,
-			required: true,
 			ref: 'Member',
+		},
+
+		guestId: {
+			type: String,
+			trim: true,
 		},
 
 		title: {
@@ -35,5 +39,6 @@ const AiChatSessionSchema = new Schema(
 
 AiChatSessionSchema.index({ memberId: 1, updatedAt: -1 });
 AiChatSessionSchema.index({ memberId: 1, sessionStatus: 1 });
+AiChatSessionSchema.index({ guestId: 1, updatedAt: -1 });
 
 export default AiChatSessionSchema;

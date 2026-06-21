@@ -11,8 +11,8 @@ export class AiChatSession {
 	@Field(() => AiChatSessionStatus)
 	sessionStatus!: AiChatSessionStatus;
 
-	@Field(() => String)
-	memberId!: string;
+	@Field(() => String, { nullable: true })
+	memberId?: string;
 
 	@Field(() => String, { nullable: true })
 	title?: string;
@@ -38,8 +38,8 @@ export class AiChatMessage {
 	@Field(() => String)
 	sessionId!: string;
 
-	@Field(() => String)
-	memberId!: string;
+	@Field(() => String, { nullable: true })
+	memberId?: string;
 
 	@Field(() => AiChatMessageRole)
 	role!: AiChatMessageRole;

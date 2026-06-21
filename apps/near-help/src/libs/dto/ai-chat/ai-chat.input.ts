@@ -8,6 +8,12 @@ export class CreateAiChatSessionInput {
 	@Length(1, 100)
 	@Field(() => String, { nullable: true })
 	title?: string;
+
+	@IsOptional()
+	@IsString()
+	@Length(1, 100)
+	@Field(() => String, { nullable: true })
+	guestId?: string;
 }
 
 @InputType()
@@ -20,6 +26,12 @@ export class SendAiChatMessageInput {
 	@Length(1, 4000)
 	@Field(() => String)
 	message!: string;
+
+	@IsOptional()
+	@IsString()
+	@Length(1, 100)
+	@Field(() => String, { nullable: true })
+	guestId?: string;
 }
 
 @InputType()
@@ -56,6 +68,12 @@ export class GetAiChatMessagesInput {
 	@Max(100)
 	@Field(() => Int, { nullable: true })
 	limit?: number;
+
+	@IsOptional()
+	@IsString()
+	@Length(1, 100)
+	@Field(() => String, { nullable: true })
+	guestId?: string;
 }
 
 @InputType()

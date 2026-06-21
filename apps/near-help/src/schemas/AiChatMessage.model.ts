@@ -11,8 +11,12 @@ const AiChatMessageSchema = new Schema(
 
 		memberId: {
 			type: Schema.Types.ObjectId,
-			required: true,
 			ref: 'Member',
+		},
+
+		guestId: {
+			type: String,
+			trim: true,
 		},
 
 		role: {

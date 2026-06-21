@@ -28,8 +28,11 @@ import type {
 } from '../../../libs/dto/ai-chat/ai-chat.output';
 import type { Member } from '../../../libs/dto/member/member';
 import type { ChatCompletionMessage } from '../types/ai.types';
+import type { AuthMemberPayload } from '../../../libs/types/auth';
 
 const HISTORY_LIMIT = 20;
+
+type ChatIdentity = { memberId: string; guestId?: never } | { memberId?: never; guestId: string };
 
 type SessionsAggregateResult = {
 	list: AiChatSession[];
@@ -50,12 +53,16 @@ export class AiChatService {
 		private readonly aiService: AiService,
 	) {}
 
-	public async createSession(memberId: string, input: CreateAiChatSessionInput): Promise<AiChatSession> {
-		await this.ensureActiveMember(memberId);
+	public async createSession(
+		authMember: AuthMemberPayload | null,
+		input: CreateAiChatSessionInput,
+	): Promise<AiChatSession> {
+		const identity = await this.resolveIdentity(authMember, input.guestId);
 
 		const session = await this.sessionModel.create({
 			sessionStatus: AiChatSessionStatus.ACTIVE,
-			memberId: new Types.ObjectId(memberId),
+			memberId: identity.memberId ? new Types.ObjectId(identity.memberId) : undefined,
+			guestId: identity.guestId,
 			title: input.title ?? null,
 			messageCount: 0,
 		});
@@ -63,16 +70,17 @@ export class AiChatService {
 		return session as AiChatSession;
 	}
 
-	public async sendMessage(memberId: string, input: SendAiChatMessageInput): Promise<AiChatSendResult> {
-		await this.ensureActiveMember(memberId);
+	public async sendMessage(
+		authMember: AuthMemberPayload | null,
+		input: SendAiChatMessageInput,
+	): Promise<AiChatSendResult> {
+		const identity = await this.resolveIdentity(authMember, input.guestId);
 
 		const session = await this.sessionModel.findById(input.sessionId).exec();
 		if (!session || session.sessionStatus !== AiChatSessionStatus.ACTIVE) {
 			throw new NotFoundException(CommonMessage.NO_DATA_FOUND);
 		}
-		if (String(session.memberId) !== memberId) {
-			throw new ForbiddenException(CommonMessage.NOT_ALLOWED_REQUEST);
-		}
+		this.ensureOwnership(session, identity);
 
 		const trimmedMessage = input.message.trim();
 		if (!trimmedMessage) {
@@ -105,19 +113,21 @@ export class AiChatService {
 		}
 
 		const now = new Date();
-		const memberObjectId = new Types.ObjectId(memberId);
+		const memberObjectId = identity.memberId ? new Types.ObjectId(identity.memberId) : undefined;
 		const sessionObjectId = new Types.ObjectId(input.sessionId);
 
 		const [userMsg, assistantMsg] = await Promise.all([
 			this.messageModel.create({
 				sessionId: sessionObjectId,
 				memberId: memberObjectId,
+				guestId: identity.guestId,
 				role: AiChatMessageRole.USER,
 				content: trimmedMessage,
 			}),
 			this.messageModel.create({
 				sessionId: sessionObjectId,
 				memberId: memberObjectId,
+				guestId: identity.guestId,
 				role: AiChatMessageRole.ASSISTANT,
 				content: aiResponseText,
 			}),
@@ -172,16 +182,17 @@ export class AiChatService {
 		return this.buildPaginatedSessionsResult(data, page, limit);
 	}
 
-	public async getMessages(memberId: string, input: GetAiChatMessagesInput): Promise<AiChatMessagesResult> {
-		await this.ensureActiveMember(memberId);
+	public async getMessages(
+		authMember: AuthMemberPayload | null,
+		input: GetAiChatMessagesInput,
+	): Promise<AiChatMessagesResult> {
+		const identity = await this.resolveIdentity(authMember, input.guestId);
 
 		const session = await this.sessionModel.findById(input.sessionId).lean().exec();
 		if (!session) {
 			throw new NotFoundException(CommonMessage.NO_DATA_FOUND);
 		}
-		if (String(session.memberId) !== memberId) {
-			throw new ForbiddenException(CommonMessage.NOT_ALLOWED_REQUEST);
-		}
+		this.ensureOwnership(session, identity);
 
 		const page = input.page && input.page > 0 ? input.page : 1;
 		const limit = input.limit && input.limit > 0 ? Math.min(input.limit, 100) : 50;
@@ -231,6 +242,35 @@ export class AiChatService {
 		}
 		if (member.memberStatus === MemberStatus.BLOCKED) {
 			throw new ForbiddenException(CommonMessage.BLOCKED_USER);
+		}
+	}
+
+	private async resolveIdentity(
+		authMember: AuthMemberPayload | null,
+		guestId?: string,
+	): Promise<ChatIdentity> {
+		if (authMember) {
+			await this.ensureActiveMember(authMember._id);
+			return { memberId: authMember._id };
+		}
+
+		const trimmedGuestId = guestId?.trim();
+		if (!trimmedGuestId) {
+			throw new BadRequestException(CommonMessage.BAD_REQUEST);
+		}
+
+		return { guestId: trimmedGuestId };
+	}
+
+	private ensureOwnership(
+		session: { memberId?: unknown; guestId?: string | null },
+		identity: ChatIdentity,
+	): void {
+		const sessionOwnerKey = session.memberId ? `m:${String(session.memberId)}` : `g:${session.guestId ?? ''}`;
+		const identityKey = identity.memberId ? `m:${identity.memberId}` : `g:${identity.guestId}`;
+
+		if (sessionOwnerKey !== identityKey) {
+			throw new ForbiddenException(CommonMessage.NOT_ALLOWED_REQUEST);
 		}
 	}
 
